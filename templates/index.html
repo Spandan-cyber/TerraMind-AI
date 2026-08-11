@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TerraMind | AI Precision Agriculture</title>
+
+    <!-- FAVICON LINK -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-terramind.png') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <!-- GSAP & ScrollTrigger CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- OGL WebGL Library (for SpecularButton) -->
+    <script src="https://cdn.jsdelivr.net/npm/ogl@0.0.116/dist/ogl.umd.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/SpecularButton.css') }}">
+    <script src="{{ url_for('static', filename='js/SpecularButton.js') }}"></script>
+    <!-- ClickSpark Particle Engine -->
+    <script src="{{ url_for('static', filename='js/ClickSpark.js') }}"></script>
+
+    <!-- Lottie Player CDN -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <style>
+        /* Locks the screen until the loader finishes */
+        body.loading-lock {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Chrome, Edge, and Safari Custom Emerald Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px; /* Makes the scrollbar slim */
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000000; /* Pure black to match your background */
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #374151; /* Dark grey when not interacting */
+            border-radius: 10px; /* Nice rounded pill shape */
+            border: 2px solid #000000; /* Creates a tiny gap so it doesn't touch the edges */
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981; /* Glows TerraMind Emerald on hover! */
+        }
+
+        /* Firefox Support */
+        html {
+            scrollbar-width: thin;
+            scrollbar-color: #374151 #000000;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        #sequence-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        :root {
+            --white: hsl(0, 0%, 100%);
+            --emerald-primary: rgba(16, 185, 129, 1);
+            --emerald-glow: rgba(16, 185, 129, 0.2);
+            --emerald-border: rgba(16, 185, 129, 0.8);
+            --border-color: rgba(255, 255, 255, 0.08); /* Minimal Frost UI Border */
+            --background-dark: rgba(255, 255, 255, 0.03); /* Frost Glass Background */
+            color-scheme: dark;
+        }
+
+        .card-grid {
+            display: grid;
+            gap: 1.5rem;
+            padding: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .magic-bento-card {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 220px;
+            width: 100%;
+            padding: 2rem;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            background: var(--background-dark);
+            
+            /* Frost UI / Glassmorphism Blur */
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            
+            font-weight: 300;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+            --glow-x: 50%;
+            --glow-y: 50%;
+            --glow-intensity: 0;
+            --glow-radius: 250px;
+        }
+
+        .magic-bento-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .magic-bento-card__header,
+        .magic-bento-card__content {
+            display: flex;
+            position: relative;
+            color: var(--white);
+            z-index: 10;
+        }
+
+        .magic-bento-card__header {
+            gap: 0.75em;
+            justify-content: space-between;
+        }
+
+        .magic-bento-card__content {
+            flex-direction: column;
+        }
+
+        .magic-bento-card__description {
+            font-size: 14px;
+            line-height: 1.5;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .card-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .card-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            /* Bento Grid Span Layout */
+            .magic-bento-card:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+            .magic-bento-card:nth-child(2) { grid-column: span 1; grid-row: span 1; }
+            .magic-bento-card:nth-child(3) { grid-column: span 1; grid-row: span 1; }
+            .magic-bento-card:nth-child(4) { grid-column: span 1; }
+            .magic-bento-card:nth-child(5) { grid-column: span 1; }
+            .magic-bento-card:nth-child(6) { grid-column: span 1; }
+        }
+
+        /* TerraMind Border Glow Effect */
+        .magic-bento-card--border-glow::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            padding: 2px;
+            background: radial-gradient(
+                var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+                rgba(16, 185, 129, calc(var(--glow-intensity) * 1)) 0%,
+                rgba(16, 185, 129, calc(var(--glow-intensity) * 0.4)) 40%,
+                transparent 80%
+            );
+            border-radius: inherit;
+            -webkit-mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .magic-bento-card--border-glow:hover {
+            box-shadow:
+                0 4px 30px rgba(0, 0, 0, 0.4),
+                0 0 40px var(--emerald-glow);
+        }
+
+        .particle-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 1);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .particle::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        /* Global spotlight styles */
+        .global-spotlight {
+            mix-blend-mode: screen;
+            will-change: transform, opacity;
+            z-index: 200 !important;
+            pointer-events: none;
+        }
+
+        .bento-section {
+            position: relative;
+            user-select: none;
+        }
+    </style>
+
+</head>
+
+<body class="loading-lock bg-black text-white min-h-screen">
+
+<!-- TERRAMIND TRACTOR LOADER -->
+<div id="terramind-loader" class="fixed inset-0 z-[999999] bg-black flex flex-col items-center justify-center">
+  
+  <!-- The Tractor Lottie Animation -->
+  <lottie-player 
+    src="/static/animations/tractor.json" 
+    background="transparent" 
+    speed="1" 
+    style="width: 300px; height: 300px;" 
+    loop 
+    autoplay>
+  </lottie-player>
+
+  <!-- Glowing Emerald Progress Bar -->
+  <div class="w-64 h-1 bg-white/10 rounded-full overflow-hidden relative -mt-4">
+    <div id="loader-bar" class="absolute top-0 left-0 h-full bg-emerald-500 w-0 shadow-[0_0_15px_rgba(16,185,129,0.8)]"></div>
+  </div>
+
+  <!-- Terminal Status Text -->
+  <div id="loader-text" class="text-emerald-400 font-mono text-xs tracking-[0.3em] uppercase mt-6">
+    Initializing agricultural scan...
+  </div>
+  
+</div>
+
+<!-- APP TRANSITION LOADER (Initially Hidden) -->
+<div id="app-transition-loader" class="fixed inset-0 z-[999999] bg-black flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
+  
+  <!-- The Farmer Lottie Animation -->
+  <lottie-player 
+    src="/static/animations/farmer.json" 
+    background="transparent" 
+    speed="1" 
+    style="width: 350px; height: 350px;" 
+    loop 
+    autoplay>
+  </lottie-player>
+
+  <h2 class="text-2xl md:text-3xl font-bold text-white mt-8 tracking-wide animate-pulse drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">
+    Connecting to Workspace...
+  </h2>
+  
+</div>
+
+<!-- Main Container -->
+<div class="bg-black text-white min-h-screen font-sans">
+
+  <!-- Minimal Dark Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 px-8 py-5 flex items-center justify-between bg-black/40 backdrop-blur-md border-b border-white/5">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl font-bold tracking-tight text-white">Terra<span class="text-emerald-500">Mind</span></span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="/login" class="text-sm font-medium text-gray-300 hover:text-white transition">Login</a>
+      <a href="/dashboard" class="specular-button specular-button--sm text-black bg-white hover:bg-gray-200 transition" data-radius="20" data-line-color="#10b981" data-base-color="#34d399" data-intensity="1.5">
+        <span class="specular-button__label font-bold text-sm">Open App</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- SECTION 1: The Clean Scroll Hero (Blooming Flower) -->
+  <section id="scroll-hero" class="relative w-full bg-black min-h-[200vh]">
+    <div class="sticky top-0 w-full h-screen flex flex-col items-center justify-center overflow-hidden">
+      
+      <!-- GSAP Canvas for Flower -->
+      <canvas id="sequence-canvas" class="absolute inset-0 w-full h-full object-contain z-0"></canvas>
+      
+      <!-- Minimal Hero Text -->
+      <div id="hero-text" class="relative z-10 text-center pointer-events-none px-4 flex flex-col items-center">
+        <h1 class="text-7xl md:text-9xl font-extrabold text-white tracking-tighter drop-shadow-2xl">
+          TerraMind <span class="text-emerald-500">AI</span>
+        </h1>
+        
+        <!-- NEW: Typing Effect Container -->
+        <div class="mt-6 text-xl md:text-2xl text-gray-300 font-light tracking-wide max-w-2xl min-h-[4rem]">
+          <span id="typing-text"></span>
+          <span id="typing-cursor" class="text-emerald-500 font-bold opacity-100">|</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 2: Scrollytelling Earth Section -->
+  <section id="earth-section" class="relative w-full h-screen bg-black overflow-hidden">
+    
+    <!-- GSAP Earth Canvas -->
+    <div class="absolute inset-0 w-full h-full z-0 flex items-center justify-center">
+      <canvas id="earth-canvas" class="min-w-full min-h-full object-cover opacity-90"></canvas>
+    </div>
+
+    <!-- Top & Bottom Fade Masks (For smooth blending) -->
+    <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-black to-transparent z-10 pointer-events-none"></div>
+    <div class="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
+
+    <!-- Floating Information Text (No Boxes) -->
+    <div class="relative z-20 w-full max-w-7xl mx-auto h-full px-6 md:px-12 flex items-center pointer-events-none">
+      <div class="max-w-2xl relative w-full">
+
+        <!-- Info Block 1 (Appears First) -->
+        <div class="earth-info absolute top-1/2 left-0 -translate-y-1/2 opacity-0 text-left">
+           <h3 class="text-emerald-400 font-mono text-sm md:text-base uppercase tracking-widest mb-3">Phase 01: Orbit</h3>
+           <h2 class="text-5xl md:text-7xl font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] mb-4 leading-tight">
+             Global Satellite Sync
+           </h2>
+           <p class="text-lg md:text-xl text-gray-200 drop-shadow-xl max-w-lg">
+             We pull multispectral imaging directly from Sentinel-2 satellites as they pass over your region.
+           </p>
+        </div>
+
+        <!-- Info Block 2 (Appears Second) -->
+        <div class="earth-info absolute top-1/2 left-0 -translate-y-1/2 opacity-0 text-left">
+           <h3 class="text-cyan-400 font-mono text-sm md:text-base uppercase tracking-widest mb-3">Phase 02: Scan</h3>
+           <h2 class="text-5xl md:text-7xl font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] mb-4 leading-tight">
+             Pixel-Perfect NDVI
+           </h2>
+           <p class="text-lg md:text-xl text-gray-200 drop-shadow-xl max-w-lg">
+             Translating infrared light into actionable vegetation health data, pinpointing crop stress before it's visible.
+           </p>
+        </div>
+
+        <!-- Info Block 3 (Appears Last) -->
+        <div class="earth-info absolute top-1/2 left-0 -translate-y-1/2 opacity-0 text-left">
+           <h3 class="text-purple-400 font-mono text-sm md:text-base uppercase tracking-widest mb-3">Phase 03: Advise</h3>
+           <h2 class="text-5xl md:text-7xl font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] mb-4 leading-tight">
+             Predictive Analytics
+           </h2>
+           <p class="text-lg md:text-xl text-gray-200 drop-shadow-xl max-w-lg">
+             Our AI merges orbital telemetry with local micro-climates to generate precise yield predictions and treatment plans.
+           </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: The AI Diagnostic Ring -->
+  <section id="ai-section" class="relative w-full h-screen bg-black overflow-hidden">
+    
+    <!-- GSAP AI Canvas (The Ring) -->
+    <div class="absolute inset-0 w-full h-full z-0 flex items-center justify-center">
+      <canvas id="ai-canvas" class="min-w-full min-h-full object-cover opacity-90"></canvas>
+    </div>
+
+    <!-- Fade Masks -->
+    <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-black to-transparent z-10 pointer-events-none"></div>
+    <div class="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
+
+    <!-- Scrollytelling Text Blocks (Centered over the Hole) -->
+    <div class="relative z-20 w-full h-full flex items-center justify-center pointer-events-none px-6">
+      <div class="relative w-full max-w-4xl flex items-center justify-center text-center">
+
+        <!-- Info Block 1 (Starts hidden in the center) -->
+        <div class="ai-info absolute opacity-0 flex flex-col items-center justify-center">
+           <h3 class="text-purple-400 font-mono text-sm md:text-base uppercase tracking-widest mb-3">Diagnostic Core</h3>
+           <h2 class="text-5xl md:text-7xl font-bold text-white drop-shadow-[0_4px_30px_rgba(0,0,0,1)] mb-4 leading-tight">
+             Gemini Vision Engine
+           </h2>
+           <p class="text-lg md:text-xl text-gray-200 drop-shadow-2xl max-w-2xl mx-auto font-medium">
+             Upload a photo of any crop. Our custom AI model scans the cellular structure for early signs of blight, rust, or nutrient deficiency.
+           </p>
+        </div>
+
+        <!-- Info Block 2 (Starts hidden in the center) -->
+        <div class="ai-info absolute opacity-0 flex flex-col items-center justify-center">
+           <h3 class="text-amber-400 font-mono text-sm md:text-base uppercase tracking-widest mb-3">Actionable Data</h3>
+           <h2 class="text-5xl md:text-7xl font-bold text-white drop-shadow-[0_4px_30px_rgba(0,0,0,1)] mb-4 leading-tight">
+             Targeted Treatments
+           </h2>
+           <p class="text-lg md:text-xl text-gray-200 drop-shadow-2xl max-w-2xl mx-auto font-medium">
+             Stop over-spraying chemicals. TerraMind calculates the exact dosage and treatment area, saving money and protecting the local ecosystem.
+           </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section (MagicBento Grid) -->
+  <section class="py-24 bg-black relative z-10 w-full px-6 max-w-7xl mx-auto bento-section">
+    
+    <!-- Section Title -->
+    <div class="mb-16 text-center">
+      <h2 class="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Full-Spectrum Crop Intelligence</h2>
+      <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+        Harness multispectral satellite feeds and predictive weather models tailored specifically to your farm boundaries.
+      </p>
+    </div>
+
+    <!-- The MagicBento Box Grid -->
+    <div class="card-grid" id="magic-bento-grid">
+
+      <!-- Card 1: NDVI Analysis (Spans 2 cols, 2 rows on desktop) -->
+      <div class="magic-bento-card magic-bento-card--border-glow particle-container" style="background-color: rgba(255, 255, 255, 0.02); --glow-color: 16, 185, 129;">
+        <div class="magic-bento-card__header">
+          <div class="magic-bento-card__label flex items-center gap-2 text-emerald-400 font-mono tracking-widest text-xs uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Telemetry
+          </div>
+        </div>
+        <div class="magic-bento-card__content mt-8 md:mt-16">
+          <h2 class="magic-bento-card__title text-white font-bold text-2xl md:text-3xl">NDVI Analysis</h2>
+          <p class="magic-bento-card__description text-gray-400 mt-3 text-base">Real-time vegetation health indexing via Sentinel-2 satellite feeds with automated cloud masking.</p>
+        </div>
+      </div>
+
+      <!-- Card 2: Gemini Vision Engine -->
+      <div class="magic-bento-card magic-bento-card--border-glow particle-container" style="background-color: rgba(255, 255, 255, 0.02); --glow-color: 16, 185, 129;">
+        <div class="magic-bento-card__header">
+          <div class="magic-bento-card__label flex items-center gap-2 text-emerald-400 font-mono tracking-widest text-xs uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Intelligence
+          </div>
+        </div>
+        <div class="magic-bento-card__content mt-8">
+          <h2 class="magic-bento-card__title text-white font-bold text-xl">Gemini Vision Engine</h2>
+          <p class="magic-bento-card__description text-gray-400 mt-2">AI-powered cellular leaf disease diagnostics and blight detection.</p>
+        </div>
+      </div>
+
+      <!-- Card 3: Micro-Climate API -->
+      <div class="magic-bento-card magic-bento-card--border-glow particle-container" style="background-color: rgba(255, 255, 255, 0.02); --glow-color: 16, 185, 129;">
+        <div class="magic-bento-card__header">
+          <div class="magic-bento-card__label flex items-center gap-2 text-emerald-400 font-mono tracking-widest text-xs uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Forecast
+          </div>
+        </div>
+        <div class="magic-bento-card__content mt-8">
+          <h2 class="magic-bento-card__title text-white font-bold text-xl">Micro-Climate API</h2>
+          <p class="magic-bento-card__description text-gray-400 mt-2">High-precision 7-day predictive weather models and precipitation alerts.</p>
+        </div>
+      </div>
+
+      <!-- Card 4: Targeted Treatments -->
+      <div class="magic-bento-card magic-bento-card--border-glow particle-container" style="background-color: rgba(255, 255, 255, 0.02); --glow-color: 16, 185, 129;">
+        <div class="magic-bento-card__header">
+          <div class="magic-bento-card__label flex items-center gap-2 text-emerald-400 font-mono tracking-widest text-xs uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Advisory
+          </div>
+        </div>
+        <div class="magic-bento-card__content mt-8">
+          <h2 class="magic-bento-card__title text-white font-bold text-xl">Targeted Treatments</h2>
+          <p class="magic-bento-card__description text-gray-400 mt-2">Exact chemical dosage and localized pesticide application mapping.</p>
+        </div>
+      </div>
+
+      <!-- Card 5: Evapotranspiration -->
+      <div class="magic-bento-card magic-bento-card--border-glow particle-container" style="background-color: rgba(255, 255, 255, 0.02); --glow-color: 16, 185, 129;">
+        <div class="magic-bento-card__header">
+          <div class="magic-bento-card__label flex items-center gap-2 text-emerald-400 font-mono tracking-widest text-xs uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Sensors
+          </div>
+        </div>
+        <div class="magic-bento-card__content mt-8">
+          <h2 class="magic-bento-card__title text-white font-bold text-xl">Evapotranspiration</h2>
+          <p class="magic-bento-card__description text-gray-400 mt-2">Automated tracking of soil moisture loss and water stress index.</p>
+        </div>
+      </div>
+
+      <!-- Card 6: Yield Prediction -->
+      <div class="magic-bento-card magic-bento-card--border-glow particle-container" style="background-color: rgba(255, 255, 255, 0.02); --glow-color: 16, 185, 129;">
+        <div class="magic-bento-card__header">
+          <div class="magic-bento-card__label flex items-center gap-2 text-emerald-400 font-mono tracking-widest text-xs uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Analytics
+          </div>
+        </div>
+        <div class="magic-bento-card__content mt-8">
+          <h2 class="magic-bento-card__title text-white font-bold text-xl">Yield Prediction</h2>
+          <p class="magic-bento-card__description text-gray-400 mt-2">Machine learning harvest estimations and historical trend analysis.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="relative bg-black pt-24 pb-10 overflow-hidden border-t border-white/5">
+    
+    <!-- Glowing Background Blob (Creates a subtle emerald aura behind the CTA) -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-6">
+      
+      <!-- Massive Final CTA Section -->
+      <div class="flex flex-col items-center text-center mb-24 mt-8">
+        <h2 class="text-5xl md:text-6xl font-extrabold text-white mb-6 tracking-tight drop-shadow-lg">
+          Ready to Transform <br/>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Your Yield?</span>
+        </h2>
+        <p class="text-gray-400 text-lg mb-10 max-w-xl">
+          Join the agricultural revolution. Deploy precision AI diagnostics and satellite telemetry to your farm today.
+        </p>
+        <a href="/dashboard" class="specular-button specular-button--lg" data-radius="50" data-line-color="#10b981" data-base-color="#1f2937" data-intensity="1.5" data-shine-size="12" data-shine-fade="50" data-thickness="1.5" data-speed="0.4" data-proximity="300" style="--sb-radius: 50px; --sb-tint: #ffffff; --sb-tint-opacity: 0.03; --sb-blur: 12px; --sb-text-color: #ffffff;">
+          <span class="specular-button__label text-lg font-bold">Launch TerraMind Workspace</span>
+        </a>
+      </div>
+
+      <!-- Footer Links Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-12 pb-12 border-b border-white/10">
+        
+        <!-- Brand Column (Takes up more space) -->
+        <div class="md:col-span-6 space-y-4">
+          <div class="flex items-center gap-2 text-3xl font-bold tracking-tight text-white">
+            Terra<span class="text-emerald-500">Mind</span>
+          </div>
+          <p class="text-gray-400 text-sm max-w-sm leading-relaxed">
+            AI-Powered Precision Agriculture. Stop guessing with chemicals. Start knowing with orbital intelligence and machine learning.
+          </p>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="md:col-span-3 flex flex-col space-y-4">
+          <h4 class="text-white font-semibold tracking-wide uppercase text-sm mb-1">Platform</h4>
+          <a href="#earth-section" class="text-gray-400 hover:text-emerald-400 text-sm transition-colors">NDVI Radar</a>
+          <a href="#ai-section" class="text-gray-400 hover:text-emerald-400 text-sm transition-colors">Gemini Vision Engine</a>
+          <a href="/dashboard" class="text-gray-400 hover:text-emerald-400 text-sm transition-colors">Live Telemetry</a>
+        </div>
+
+        <!-- Project / Social -->
+        <div class="md:col-span-3 flex flex-col space-y-4">
+          <h4 class="text-white font-semibold tracking-wide uppercase text-sm mb-1">Project Info</h4>
+          <a href="https://github.com/d3l3te-cloud/terramindpush" target="_blank" class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-2">
+            <span>GitHub Repository</span>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path></svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">Documentation</a>
+          <a href="/login" class="text-gray-400 hover:text-white text-sm transition-colors">Farmer Login</a>
+        </div>
+      </div>
+
+      <!-- Bottom Copyright & Status -->
+      <div class="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-gray-500 text-sm font-medium">
+          © 2026 TerraMind. Engineered for a sustainable future.
+        </p>
+        
+        <!-- System Status Indicator -->
+        <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          All Systems Operational
+        </div>
+      </div>
+      
+    </div>
+  </footer>
+
+</div>
+
+<!-- Scroll Animation Script -->
+<script>
+  gsap.registerPlugin(ScrollTrigger);
+
+  // ==========================================
+  // TRACTOR BOOT LOADER LOGIC
+  // ==========================================
+  
+  // Create a timeline that unlocks the scrollbar when finished
+  const loaderTl = gsap.timeline({
+    onComplete: () => {
+      document.body.classList.remove("loading-lock");
+    }
+  });
+
+  // 1. Fill the emerald bar over 2.5 seconds
+  loaderTl.to("#loader-bar", { 
+    width: "100%", 
+    duration: 2.5, 
+    ease: "power2.inOut" 
+  }, 0);
+  
+  // 2. Change the text midway through to look like a real boot sequence
+  loaderTl.to("#loader-text", {
+    opacity: 0,
+    duration: 0.2,
+    onComplete: () => document.getElementById("loader-text").innerText = "Deploying field sensors..."
+  }, 0.8)
+  .to("#loader-text", { opacity: 1, duration: 0.2 }, 1.0)
+  .to("#loader-text", {
+    opacity: 0,
+    duration: 0.2,
+    onComplete: () => document.getElementById("loader-text").innerText = "Systems Ready."
+  }, 1.8)
+  .to("#loader-text", { opacity: 1, duration: 0.2 }, 2.0);
+
+  // 3. Slide the entire black loading screen UP to reveal the landing page
+  loaderTl.to("#terramind-loader", {
+    yPercent: -100,
+    duration: 0.8,
+    ease: "power3.inOut",
+    delay: 0.3 // Brief pause so people can read "Systems Ready"
+  });
+
+  // ==========================================
+  // HERO TYPING EFFECT LOGIC
+  // ==========================================
+  const typingTexts = [
+    "Scroll to witness the evolution of agricultural intelligence.",
+    "Analyze crop health from Low Earth Orbit.",
+    "Stop guessing with chemicals. Start knowing with AI."
+  ];
+
+  const typingTextEl = document.getElementById("typing-text");
+  const cursorEl = document.getElementById("typing-cursor");
+
+  let textArrayIndex = 0;
+  let charIndex = 0;
+  let isDeleting = false;
+
+  // Blink the cursor using GSAP
+  if (cursorEl) {
+    gsap.to(cursorEl, { 
+      opacity: 0, 
+      duration: 0.5, 
+      repeat: -1, 
+      yoyo: true, 
+      ease: "power2.inOut" 
+    });
+  }
+
+  function typeEffect() {
+    if (!typingTextEl) return;
+    const currentString = typingTexts[textArrayIndex];
+
+    // Handle typing and deleting
+    if (isDeleting) {
+      typingTextEl.textContent = currentString.substring(0, charIndex - 1);
+      charIndex--;
+    } else {
+      typingTextEl.textContent = currentString.substring(0, charIndex + 1);
+      charIndex++;
+    }
+
+    // Speed logic (matches React Bits defaults)
+    let typeSpeed = isDeleting ? 30 : 50;
+
+    // Pause at the end of the sentence
+    if (!isDeleting && charIndex === currentString.length) {
+      typeSpeed = 2000; 
+      isDeleting = true;
+    } 
+    // Move to the next sentence when deleted
+    else if (isDeleting && charIndex === 0) {
+      isDeleting = false;
+      textArrayIndex = (textArrayIndex + 1) % typingTexts.length;
+      typeSpeed = 500; 
+    }
+
+    setTimeout(typeEffect, typeSpeed);
+  }
+
+  // Start the effect
+  setTimeout(typeEffect, 1000);
+
+  // ==========================================
+  // 1. FLOWER CANVAS ANIMATION LOGIC
+  // ==========================================
+  const canvas = document.getElementById("sequence-canvas");
+  const context = canvas.getContext("2d");
+  canvas.width = 1920;
+  canvas.height = 1080;
+  
+  const frameCount = 100;
+  const currentFrame = index => `/static/sequence/ezgif-frame-${(index + 1).toString().padStart(3, '0')}.jpg`;
+
+  const images = [];
+  const sequence = { frame: 0 };
+
+  for (let i = 0; i < frameCount; i++) {
+    const img = new Image();
+    img.src = currentFrame(i);
+    images.push(img);
+  }
+
+  function render() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    const img = images[sequence.frame];
+    
+    if (img && img.complete) {
+      const hRatio = canvas.width / img.width;
+      const vRatio = canvas.height / img.height;
+      const ratio = Math.max(hRatio, vRatio);
+      const centerShift_x = (canvas.width - img.width * ratio) / 2;
+      const centerShift_y = (canvas.height - img.height * ratio) / 2;
+      
+      context.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
+      
+      // Smoothly fade out the canvas during the last 15 frames
+      const fadeFrames = 15;
+      if (sequence.frame > frameCount - fadeFrames) {
+        canvas.style.opacity = (frameCount - sequence.frame) / fadeFrames; 
+      } else {
+        canvas.style.opacity = 1;
+      }
+    }
+  }
+
+  images[0].onload = render;
+
+  // ScrollTrigger for the Flower Sequence
+  gsap.to(sequence, {
+    frame: frameCount - 1,
+    snap: "frame",
+    ease: "none",
+    scrollTrigger: {
+      trigger: "#scroll-hero",
+      start: "top top",
+      end: "+=200%",
+      scrub: 0.5,
+      pin: true,
+    },
+    onUpdate: render
+  });
+
+  // ScrollTrigger to Fade Out the Hero Text Upwards
+  gsap.to("#hero-text", {
+    opacity: 0,
+    y: -100,
+    ease: "power2.out",
+    scrollTrigger: {
+      trigger: "#scroll-hero",
+      start: "top top",
+      end: "+=50%",
+      scrub: 1,
+    }
+  });
+
+  // ==========================================
+  // 2. EARTH SCROLLYTELLING LOGIC
+  // ==========================================
+  const canvasEarth = document.getElementById("earth-canvas");
+  const contextEarth = canvasEarth.getContext("2d");
+  canvasEarth.width = 1920;
+  canvasEarth.height = 1080;
+  
+  const frameCountEarth = 75; // 75 frames in static/sequence_earth/
+  const currentFrameEarth = index => `/static/sequence_earth/ezgif-frame-${(index + 1).toString().padStart(3, '0')}.jpg`;
+
+  const imagesEarth = [];
+  const sequenceEarth = { frame: 0 };
+
+  for (let i = 0; i < frameCountEarth; i++) {
+    const img = new Image();
+    img.src = currentFrameEarth(i);
+    imagesEarth.push(img);
+  }
+
+  function renderEarth() {
+    contextEarth.clearRect(0, 0, canvasEarth.width, canvasEarth.height);
+    const img = imagesEarth[sequenceEarth.frame];
+    if (img && img.complete) {
+      const hRatio = canvasEarth.width / img.width;
+      const vRatio = canvasEarth.height / img.height;
+      const ratio = Math.max(hRatio, vRatio);
+      const centerShift_x = (canvasEarth.width - img.width * ratio) / 2;
+      const centerShift_y = (canvasEarth.height - img.height * ratio) / 2;
+      contextEarth.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
+    }
+  }
+
+  imagesEarth[0].onload = renderEarth;
+
+  // --- THE MASTER TIMELINE ---
+  // Scroll for 600% of the screen height to fit all 3 phases
+  const earthTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: "#earth-section",
+      start: "top top",
+      end: "+=600%",  // Increased from 400% to 600% for slower, spaced-out scroll
+      scrub: 1,       
+      pin: true       
+    }
+  });
+
+  // 1. Rotate the Earth across 15 seconds of timeline duration
+  earthTl.to(sequenceEarth, {
+    frame: frameCountEarth - 1,
+    snap: "frame",
+    ease: "none",
+    onUpdate: renderEarth,
+    duration: 15 
+  }, 0);
+
+  // 2. Select all text blocks
+  const infos = document.querySelectorAll(".earth-info");
+
+  // 3. Animate Text Block 1 (Phase 01: Orbit): Fades in at 1, stays visible, fades out at 4.5
+  earthTl.fromTo(infos[0], 
+    { opacity: 0, y: 50 }, 
+    { opacity: 1, y: 0, duration: 1 }, 1)
+  .to(infos[0], 
+    { opacity: 0, y: -50, duration: 1 }, 4.5);
+
+  // 4. Animate Text Block 2 (Phase 02: Scan): Fades in at 6, stays visible, fades out at 9.5
+  earthTl.fromTo(infos[1], 
+    { opacity: 0, y: 50 }, 
+    { opacity: 1, y: 0, duration: 1 }, 6)
+  .to(infos[1], 
+    { opacity: 0, y: -50, duration: 1 }, 9.5);
+
+  // 5. Animate Text Block 3 (Phase 03: Advise): Fades in at 11, stays visible, fades out at 14.5
+  earthTl.fromTo(infos[2], 
+    { opacity: 0, y: 50 }, 
+    { opacity: 1, y: 0, duration: 1 }, 11)
+  .to(infos[2], 
+    { opacity: 0, y: -50, duration: 1 }, 14.5);
+
+  // ==========================================
+  // 3. SECTION 3: AI RING CANVAS LOGIC
+  // ==========================================
+  const canvasAi = document.getElementById("ai-canvas");
+  const contextAi = canvasAi.getContext("2d");
+  canvasAi.width = 1920;
+  canvasAi.height = 1080;
+  
+  const frameCountAi = 100; // 100 frames in static/sequence_ai/
+  const currentFrameAi = index => `/static/sequence_ai/ezgif-frame-${(index + 1).toString().padStart(3, '0')}.jpg`;
+
+  const imagesAi = [];
+  const sequenceAi = { frame: 0 };
+
+  for (let i = 0; i < frameCountAi; i++) {
+    const img = new Image();
+    img.src = currentFrameAi(i);
+    imagesAi.push(img);
+  }
+
+  function renderAi() {
+    contextAi.clearRect(0, 0, canvasAi.width, canvasAi.height);
+    const img = imagesAi[sequenceAi.frame];
+    if (img && img.complete) {
+      const hRatio = canvasAi.width / img.width;
+      const vRatio = canvasAi.height / img.height;
+      const ratio = Math.max(hRatio, vRatio);
+      const centerShift_x = (canvasAi.width - img.width * ratio) / 2;
+      const centerShift_y = (canvasAi.height - img.height * ratio) / 2;
+      contextAi.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
+    }
+  }
+
+  imagesAi[0].onload = renderAi;
+
+  // --- THE AI MASTER TIMELINE ---
+  const aiTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: "#ai-section",
+      start: "top top",
+      end: "+=500%",  // Increased from 300% to 500% to slow the scroll
+      scrub: 1,
+      pin: true
+    }
+  });
+
+  // Rotate the ring across 12 seconds of timeline duration
+  aiTl.to(sequenceAi, {
+    frame: frameCountAi - 1,
+    snap: "frame",
+    ease: "none",
+    onUpdate: renderAi,
+    duration: 12 
+  }, 0);
+
+  const aiInfos = document.querySelectorAll(".ai-info");
+
+  // Block 1: Pops out at 1, stays visible, zooms away at 5
+  aiTl.fromTo(aiInfos[0], 
+    { opacity: 0, scale: 0 }, 
+    { opacity: 1, scale: 1, duration: 1.5, ease: "back.out(1.5)" }, 1)
+  .to(aiInfos[0], 
+    { opacity: 0, scale: 1.5, duration: 1.5, ease: "power2.in" }, 5);
+
+  // Block 2: Pops out at 7, stays visible, zooms away at 11
+  aiTl.fromTo(aiInfos[1], 
+    { opacity: 0, scale: 0 }, 
+    { opacity: 1, scale: 1, duration: 1.5, ease: "back.out(1.5)" }, 7)
+  .to(aiInfos[1], 
+    { opacity: 0, scale: 1.5, duration: 1.5, ease: "power2.in" }, 11);
+
+  // ==========================================
+  // 4. TERRAMIND MAGICBENTO INTERACTIVE ENGINE
+  // ==========================================
+  (function initMagicBento() {
+    const grid = document.getElementById("magic-bento-grid");
+    if (!grid) return;
+
+    const cards = grid.querySelectorAll(".magic-bento-card");
+    const glowColor = "16, 185, 129";
+    const spotlightRadius = 350;
+    const particleCount = 15;
+    const isMobile = window.innerWidth <= 768;
+
+    // --- 1. Global Cursor Spotlight ---
+    const spotlight = document.createElement("div");
+    spotlight.className = "global-spotlight";
+    spotlight.style.cssText = `
+      position: fixed;
+      width: 800px;
+      height: 800px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle,
+        rgba(${glowColor}, 0.15) 0%,
+        rgba(${glowColor}, 0.08) 15%,
+        rgba(${glowColor}, 0.04) 25%,
+        rgba(${glowColor}, 0.02) 40%,
+        rgba(${glowColor}, 0.01) 65%,
+        transparent 70%
+      );
+      z-index: 200;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: screen;
+    `;
+    document.body.appendChild(spotlight);
+
+    const section = grid.closest(".bento-section");
+
+    function calculateSpotlightValues(radius) {
+      return {
+        proximity: radius * 0.5,
+        fadeDistance: radius * 0.75
+      };
+    }
+
+    function updateCardGlowProperties(card, mouseX, mouseY, glow, radius) {
+      const rect = card.getBoundingClientRect();
+      const relativeX = ((mouseX - rect.left) / rect.width) * 100;
+      const relativeY = ((mouseY - rect.top) / rect.height) * 100;
+
+      card.style.setProperty("--glow-x", `${relativeX}%`);
+      card.style.setProperty("--glow-y", `${relativeY}%`);
+      card.style.setProperty("--glow-intensity", glow.toString());
+      card.style.setProperty("--glow-radius", `${radius}px`);
+    }
+
+    window.addEventListener("mousemove", e => {
+      const rect = section?.getBoundingClientRect();
+      const mouseInside = rect && e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+
+      if (!mouseInside) {
+        gsap.to(spotlight, { opacity: 0, duration: 0.3, ease: "power2.out" });
+        cards.forEach(card => card.style.setProperty("--glow-intensity", "0"));
+        return;
+      }
+
+      const { proximity, fadeDistance } = calculateSpotlightValues(spotlightRadius);
+      let minDistance = Infinity;
+
+      cards.forEach(card => {
+        const cardRect = card.getBoundingClientRect();
+        const centerX = cardRect.left + cardRect.width / 2;
+        const centerY = cardRect.top + cardRect.height / 2;
+        const distance = Math.hypot(e.clientX - centerX, e.clientY - centerY) - Math.max(cardRect.width, cardRect.height) / 2;
+        const effectiveDistance = Math.max(0, distance);
+
+        minDistance = Math.min(minDistance, effectiveDistance);
+
+        let glowIntensity = 0;
+        if (effectiveDistance <= proximity) {
+          glowIntensity = 1;
+        } else if (effectiveDistance <= fadeDistance) {
+          glowIntensity = (fadeDistance - effectiveDistance) / (fadeDistance - proximity);
+        }
+
+        updateCardGlowProperties(card, e.clientX, e.clientY, glowIntensity, spotlightRadius);
+      });
+
+      gsap.to(spotlight, {
+        left: e.clientX,
+        top: e.clientY,
+        duration: 0.15,
+        ease: "power2.out"
+      });
+
+      const targetOpacity = minDistance <= proximity
+        ? 0.9
+        : minDistance <= fadeDistance
+          ? ((fadeDistance - minDistance) / (fadeDistance - proximity)) * 0.9
+          : 0;
+
+      gsap.to(spotlight, {
+        opacity: targetOpacity,
+        duration: targetOpacity > 0 ? 0.2 : 0.5,
+        ease: "power2.out"
+      });
+    });
+
+    // --- 2. Per-Card 3D Tilt, Magnetism, Star Particles & Click Ripple ---
+    cards.forEach(card => {
+      let timeouts = [];
+      let particles = [];
+      let isHovered = false;
+
+      function clearParticles() {
+        timeouts.forEach(clearTimeout);
+        timeouts = [];
+        particles.forEach(p => {
+          gsap.to(p, {
+            scale: 0,
+            opacity: 0,
+            duration: 0.3,
+            ease: "back.in(1.7)",
+            onComplete: () => p.remove()
+          });
+        });
+        particles = [];
+      }
+
+      function spawnParticles() {
+        if (!isHovered || isMobile) return;
+        const { width, height } = card.getBoundingClientRect();
+
+        for (let i = 0; i < particleCount; i++) {
+          const timeoutId = setTimeout(() => {
+            if (!isHovered) return;
+            const p = document.createElement("div");
+            p.className = "particle";
+            p.style.left = `${Math.random() * width}px`;
+            p.style.top = `${Math.random() * height}px`;
+            card.appendChild(p);
+            particles.push(p);
+
+            gsap.fromTo(p, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.7)" });
+            gsap.to(p, {
+              x: (Math.random() - 0.5) * 80,
+              y: (Math.random() - 0.5) * 80,
+              rotation: Math.random() * 360,
+              duration: 2 + Math.random() * 2,
+              ease: "none",
+              repeat: -1,
+              yoyo: true
+            });
+            gsap.to(p, {
+              opacity: 0.3,
+              duration: 1.5,
+              ease: "power2.inOut",
+              repeat: -1,
+              yoyo: true
+            });
+          }, i * 90);
+          timeouts.push(timeoutId);
+        }
+      }
+
+      card.addEventListener("mouseenter", () => {
+        isHovered = true;
+        spawnParticles();
+        if (!isMobile) {
+          gsap.to(card, {
+            rotateX: 3,
+            rotateY: 3,
+            duration: 0.4,
+            ease: "power2.out",
+            transformPerspective: 1000
+          });
+        }
+      });
+
+      card.addEventListener("mouseleave", () => {
+        isHovered = false;
+        clearParticles();
+        gsap.to(card, {
+          rotateX: 0,
+          rotateY: 0,
+          x: 0,
+          y: 0,
+          duration: 0.4,
+          ease: "power2.out"
+        });
+      });
+
+      card.addEventListener("mousemove", e => {
+        if (isMobile) return;
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = ((y - centerY) / centerY) * -6;
+        const rotateY = ((x - centerX) / centerX) * 6;
+
+        gsap.to(card, {
+          rotateX,
+          rotateY,
+          duration: 0.15,
+          ease: "power2.out",
+          transformPerspective: 1000
+        });
+
+        const magnetX = (x - centerX) * 0.04;
+        const magnetY = (y - centerY) * 0.04;
+        gsap.to(card, {
+          x: magnetX,
+          y: magnetY,
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      });
+
+      card.addEventListener("click", e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const maxDistance = Math.max(
+          Math.hypot(x, y),
+          Math.hypot(x - rect.width, y),
+          Math.hypot(x, y - rect.height),
+          Math.hypot(x - rect.width, y - rect.height)
+        );
+
+        const ripple = document.createElement("div");
+        ripple.style.cssText = `
+          position: absolute;
+          width: ${maxDistance * 2}px;
+          height: ${maxDistance * 2}px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(${glowColor}, 0.3) 0%, rgba(${glowColor}, 0.1) 40%, transparent 70%);
+          left: ${x - maxDistance}px;
+          top: ${y - maxDistance}px;
+          pointer-events: none;
+          z-index: 1000;
+        `;
+        card.appendChild(ripple);
+
+        gsap.fromTo(
+          ripple,
+          { scale: 0, opacity: 1 },
+          {
+            scale: 1,
+            opacity: 0,
+            duration: 0.8,
+            ease: "power2.out",
+            onComplete: () => ripple.remove()
+          }
+        );
+      });
+    });
+  })();
+
+  // ==========================================
+  // BUTTON CLICK TRANSITION LOGIC
+  // ==========================================
+  
+  // Select all links that should trigger the workspace transition
+  // This targets any <a> tag pointing to /login or /dashboard
+  const actionButtons = document.querySelectorAll('a[href="/login"], a[href="/dashboard"]');
+  const transitionScreen = document.getElementById('app-transition-loader');
+
+  actionButtons.forEach(button => {
+    button.addEventListener('click', function(event) {
+      // 1. Stop the browser from navigating immediately
+      event.preventDefault(); 
+      
+      // 2. Get the URL the button was trying to go to
+      const targetUrl = this.getAttribute('href'); 
+      
+      // 3. Show the Farmer transition screen
+      transitionScreen.classList.remove('opacity-0', 'pointer-events-none');
+      transitionScreen.classList.add('opacity-100', 'pointer-events-auto');
+      
+      // Optional: Lock the background scrolling again while transitioning
+      document.body.classList.add("loading-lock");
+
+      // 4. Wait for 2.5 seconds so the user can enjoy the animation, THEN navigate
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 2500); 
+    });
+  });
+</script>
+
+</body>
+
+</html>

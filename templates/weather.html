@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Intelligence - TerraMind</title>
+
+    <!-- FAVICON LINK -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-terramind.png') }}">
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- GSAP for Menu -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* ==========================================================
+           TERRAMIND FROST UI BASE ENGINE
+        ========================================================== */
+        :root {
+            --tm-emerald: #10b981;
+            --frost-bg: rgba(20, 20, 25, 0.4);
+            --frost-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1 !important; /* Brightened from dark gray to crisp light slate */
+        }
+
+        /* ==========================================================
+           WEATHER SECTION TEXT CONTRAST FIX
+        ========================================================== */
+        /* Force all secondary labels, descriptions, and metadata to high-contrast */
+        .weather-container .text-muted,
+        .weather-container small,
+        .weather-container span,
+        .forecast-item span,
+        .inner-glass-card span {
+            color: #cbd5e1 !important;
+        }
+
+        /* Ensure main metrics, temperatures, and headings stay bright white */
+        .weather-container h1, 
+        .weather-container h2, 
+        .weather-container h3, 
+        .weather-container h4, 
+        .weather-container h5, 
+        .weather-container h6,
+        .weather-container strong {
+            color: #ffffff !important;
+        }
+
+        body, html {
+            background-color: #000000 !important;
+            color: var(--text-main) !important;
+            font-family: 'Poppins', sans-serif !important;
+            margin: 0 !important; padding: 0 !important;
+            overflow-x: hidden !important;
+            min-height: 100vh;
+        }
+
+        /* --- Ambient Background Orbs (Weather Theme: Cyan & Indigo) --- */
+        .ambient-orb-1, .ambient-orb-2 {
+            position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.4; z-index: -1; pointer-events: none;
+            animation: floatOrb 20s ease-in-out infinite alternate;
+        }
+        .ambient-orb-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(56, 189, 248, 0.15); } 
+        .ambient-orb-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(99, 102, 241, 0.1); animation-delay: -10s; } 
+        @keyframes floatOrb { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(10%, 15%) scale(1.2); } }
+
+        /* --- Main Layout --- */
+        .content {
+            margin-left: 0 !important; width: 100% !important; max-width: 100% !important;
+            padding: 120px 5% 50px 5% !important; 
+        }
+
+        /* --- The Fixed, Edge-to-Edge Frosted Navbar --- */
+        .topbar {
+            position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+            width: 100vw !important; height: 80px !important;
+            margin: 0 !important; border-radius: 0 !important; border: none !important;
+            border-bottom: 1px solid var(--frost-border) !important; box-sizing: border-box !important;
+            z-index: 2000 !important; 
+            background: rgba(10, 10, 12, 0.7) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important; -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 30px !important;
+        }
+
+        /* --- Glass Panels --- */
+        .frost-panel {
+            background: var(--frost-bg) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important; -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            border: 1px solid var(--frost-border) !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+            border-radius: 24px !important; color: var(--text-main) !important; transition: all 0.4s ease !important;
+        }
+
+        /* Inner Micro-Cards for Metrics and Forecast */
+        .inner-glass-card {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 140px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        }
+        .inner-glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.3) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        /* --- Spotlight Effect --- */
+        .card-spotlight { --mouse-x: 50%; --mouse-y: 50%; --spotlight-color: rgba(56, 189, 248, 0.1); }
+        .card-spotlight::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle 300px at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+            opacity: 0; transition: opacity 0.5s ease; pointer-events: none; z-index: 0; border-radius: 24px;
+        }
+        .card-spotlight:hover::before { opacity: 1; }
+        .card-spotlight > * { position: relative; z-index: 2; }
+
+        /* --- Horizontal Scrolling for Forecast Row --- */
+        .forecast-scroll-row {
+            display: flex; gap: 16px; overflow-x: auto; padding-bottom: 15px;
+            scroll-snap-type: x mandatory;
+        }
+        .forecast-scroll-row::-webkit-scrollbar { height: 6px; }
+        .forecast-scroll-row::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
+        .forecast-scroll-row::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .forecast-scroll-row::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+        
+        .forecast-item { scroll-snap-align: start; flex: 0 0 auto; text-align: center; }
+
+        /* --- Menu Overrides --- */
+        #staggeredMenuOverlay { z-index: 1900 !important; }
+        .staggered-link { transform: translateY(50px); opacity: 0; }
+        
+        /* Metric Icons */
+        .metric-icon-box {
+            width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+        }
+
+        /* ==========================================================
+           GLOBAL CLICK SPARK EFFECT
+        ========================================================== */
+        .click-spark {
+            position: fixed;
+            pointer-events: none; /* Ensures sparks don't block clicks */
+            z-index: 9999;
+            border-radius: 50%;
+            background-color: var(--tm-emerald, #10b981);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Ambient Background Orbs -->
+<div class="ambient-orb-1"></div>
+<div class="ambient-orb-2"></div>
+
+<!-- ===================================================== -->
+<!-- Top Navbar (Fixed & Frosted) -->
+<!-- ===================================================== -->
+<header class="topbar">
+    <div class="d-flex align-items-center gap-3">
+        <button id="menuToggleBtn" class="btn text-white border-0 p-1" style="font-size: 1.8rem; outline: none;">
+            <i id="menuIcon" class="bi bi-list transition-all"></i>
+        </button>
+        <div class="d-none d-sm-block">
+            <h4 class="mb-0" style="color: #fff; font-weight: 700; letter-spacing: 0.5px;">
+                Terra<span style="color: var(--tm-emerald);">Mind</span>
+            </h4>
+        </div>
+    </div>
+
+    <div class="top-right d-flex align-items-center gap-3">
+        <div class="location-pill d-none d-md-flex align-items-center gap-2" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 6px 14px;">
+            <i class="bi bi-geo-alt-fill" style="color: var(--tm-emerald);"></i>
+            <span id="currentLocation" style="font-size: 0.85rem;">Howrah</span>
+        </div>
+        <!-- Profile Chip -->
+        <div class="profile d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.02); padding: 4px 14px 4px 4px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+            
+            <!-- Dynamic Avatar Logic -->
+            <div id="userAvatar" class="avatar" style="display:flex; width: 38px; height: 38px; border-radius: 50%; align-items: center; justify-content: center; background: transparent; padding: 0; overflow: hidden;">
+                
+                {% if session.get('profile_photo') %}
+                    <!-- Shows your uploaded photo if it exists -->
+                    <img src="{{ session.get('profile_photo') }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                {% else %}
+                    <!-- Sleek DiceBear fallback if no photo is uploaded yet -->
+                    <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                {% endif %}
+
+            </div>
+            
+            <!-- Name & Role -->
+            <div class="d-none d-sm-block" style="line-height: 1.2;">
+                <strong id="userName" style="display:block; font-size: 13px; color: #fff;">{{ session.get('full_name') or 'Spandan Das' }}</strong>
+                <small id="userRoleOrPhone" style="display:block; font-size: 10px; color: var(--text-muted);">Premium</small>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ===================================================== -->
+<!-- FULL SCREEN STAGGERED MENU OVERLAY -->
+<!-- ===================================================== -->
+<div id="staggeredMenuOverlay" class="position-fixed inset-0" style="top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(24px); display: none; opacity: 0; flex-direction: column; justify-content: flex-start; padding-left: 15%; padding-top: 120px; overflow-y: auto;">
+    <div class="d-flex flex-column gap-4 text-white" style="font-size: 2.5rem; font-weight: 700;">
+        <a href="/dashboard" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">01</span> Dashboard</a>
+        <a href="/farms" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">02</span> My Farms</a>
+        <a href="/add-farm" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">03</span> Add Farm</a>
+        <a href="/history" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">04</span> Analysis History</a>
+        <a href="/weather" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:1;">05</span> Weather</a>
+        <a href="/advisory" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">06</span> AI Advisories</a>
+        <a href="/profile" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">07</span> Profile & Settings</a>
+        <a href="#" id="menuLogoutBtn" class="staggered-link text-danger text-decoration-none d-flex align-items-center mt-4" style="font-size: 1.8rem;"><i class="bi bi-box-arrow-right mr-3" style="margin-right:15px;"></i> Logout</a>
+    </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MAIN CONTENT: WEATHER INTELLIGENCE -->
+<!-- ===================================================== -->
+<main class="content">
+
+    <!-- Header Section -->
+    <div class="d-flex flex-column mb-5">
+        <h1 style="font-size: 3rem; font-weight: 700; letter-spacing: -1px; color: #fff; margin-bottom: 5px;">Weather Intelligence</h1>
+        <p style="color: var(--text-muted); font-size: 1.1rem; margin: 0;">Current conditions and forecast for your farm.</p>
+    </div>
+
+    <!-- The Weather Container -->
+    <div class="weather-container" id="weatherContainer">
+        
+        <!-- Jinja Logic: Loop through farm weather cards if available -->
+        {% if weather_cards %}
+            {% for item in weather_cards %}
+            <div class="frost-panel card-spotlight p-4 p-lg-5 mb-5 position-relative overflow-hidden" data-spotlight-color="rgba(56, 189, 248, 0.15)">
+                
+                <!-- Top Section: Current Weather & Metrics Row -->
+                <div class="d-flex flex-column flex-xl-row justify-content-between gap-5 mb-5">
+                    
+                    <!-- Left: Big Temp & Farm Name -->
+                    <div class="d-flex flex-column justify-content-center">
+                        <h4 style="color: var(--text-muted); font-weight: 500; font-size: 1.1rem; margin-bottom: 10px;">{{ item.farm_name | default('My Farm') }}</h4>
+                        <div class="d-flex align-items-start">
+                            <h1 style="font-size: 5rem; font-weight: 700; line-height: 1; letter-spacing: -3px; color: #fff; margin: 0;">
+                                {% if item.current and item.current.temperature is defined and item.current.temperature is not none %}
+                                    {{ item.current.temperature | round | int }}&deg;
+                                {% else %}
+                                    --&deg;
+                                {% endif %}
+                            </h1>
+                            <span style="font-size: 1.5rem; font-weight: 600; color: #94a3b8; margin-top: 10px; margin-left: 5px;">C</span>
+                        </div>
+                        <p style="font-size: 1.2rem; color: #38bdf8; font-weight: 500; margin-top: 10px;">{{ (item.current and item.current.condition) | default('Clear Sky') }}</p>
+                    </div>
+
+                    <!-- Right: Metrics Cards -->
+                    <div class="d-flex flex-nowrap overflow-auto gap-3 pb-2" style="scrollbar-width: none;">
+                        
+                        <!-- Humidity -->
+                        <div class="inner-glass-card d-flex align-items-center gap-3">
+                            <div class="metric-icon-box" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                                <i class="bi bi-droplet-fill"></i>
+                            </div>
+                            <div>
+                                <span class="d-block text-muted" style="font-size: 0.85rem; font-weight: 500;">Humidity</span>
+                                <strong class="d-block text-white" style="font-size: 1.3rem;">
+                                    {% if item.current and item.current.humidity is defined and item.current.humidity is not none %}
+                                        {{ item.current.humidity }}%
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+
+                        <!-- Wind -->
+                        <div class="inner-glass-card d-flex align-items-center gap-3">
+                            <div class="metric-icon-box" style="background: rgba(167, 139, 250, 0.15); color: #a78bfa;">
+                                <i class="bi bi-wind"></i>
+                            </div>
+                            <div>
+                                <span class="d-block text-muted" style="font-size: 0.85rem; font-weight: 500;">Wind</span>
+                                <strong class="d-block text-white" style="font-size: 1.3rem;">
+                                    {% if item.current and item.current.wind_speed is defined and item.current.wind_speed is not none %}
+                                        {{ item.current.wind_speed }} km/h
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+
+                        <!-- Rain Probability -->
+                        <div class="inner-glass-card d-flex align-items-center gap-3">
+                            <div class="metric-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                <i class="bi bi-cloud-rain-heavy-fill"></i>
+                            </div>
+                            <div>
+                                <span class="d-block text-muted" style="font-size: 0.85rem; font-weight: 500;">Rain</span>
+                                <strong class="d-block text-white" style="font-size: 1.3rem;">
+                                    {% if item.current and (item.current.rain_probability is defined and item.current.rain_probability is not none) %}
+                                        {{ item.current.rain_probability }}%
+                                    {% elif item.current and (item.current.rain is defined and item.current.rain is not none) %}
+                                        {{ item.current.rain }}%
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <!-- Bottom Section: 7-Day Forecast -->
+                <div class="forecast-section border-top pt-4" style="border-color: rgba(255,255,255,0.08) !important;">
+                    <h6 class="mb-4" style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">7-Day Forecast</h6>
+                    
+                    <div class="forecast-scroll-row">
+                        {% for day in item.daily %}
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">{{ day.date | default('--') }}</span>
+                            <div class="mb-2"><i class="bi bi-cloud-rain-fill" style="font-size: 1.8rem; color: #38bdf8;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">
+                                {% if day.temp_min is defined and day.temp_min is not none and day.temp_max is defined and day.temp_max is not none %}
+                                    {{ day.temp_min }}&deg; / {{ day.temp_max }}&deg;
+                                {% else %}
+                                    -- / --
+                                {% endif %}
+                            </strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">{{ day.rain_probability | default(day.rain | default(0)) }}% rain</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+
+        {% else %}
+            
+            <!-- DEFAULT FALLBACK CARD -->
+            <div class="frost-panel card-spotlight p-4 p-lg-5 mb-5 position-relative overflow-hidden" data-spotlight-color="rgba(56, 189, 248, 0.15)">
+                
+                <!-- Top Section: Current Weather & Metrics Row -->
+                <div class="d-flex flex-column flex-xl-row justify-content-between gap-5 mb-5">
+                    
+                    <!-- Left: Big Temp & Farm Name -->
+                    <div class="d-flex flex-column justify-content-center">
+                        <h4 id="displayFarmName" style="color: var(--text-muted); font-weight: 500; font-size: 1.1rem; margin-bottom: 10px;">Farm B</h4>
+                        <div class="d-flex align-items-start">
+                            <h1 id="displayTemp" style="font-size: 5rem; font-weight: 700; line-height: 1; letter-spacing: -3px; color: #fff; margin: 0;">27&deg;</h1>
+                            <span style="font-size: 1.5rem; font-weight: 600; color: #94a3b8; margin-top: 10px; margin-left: 5px;">C</span>
+                        </div>
+                        <p id="displayCondition" style="font-size: 1.2rem; color: #38bdf8; font-weight: 500; margin-top: 10px;">Slight Rain Showers</p>
+                    </div>
+
+                    <!-- Right: Metrics Cards -->
+                    <div class="d-flex flex-nowrap overflow-auto gap-3 pb-2" style="scrollbar-width: none;">
+                        
+                        <!-- Humidity -->
+                        <div class="inner-glass-card d-flex align-items-center gap-3">
+                            <div class="metric-icon-box" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                                <i class="bi bi-droplet-fill"></i>
+                            </div>
+                            <div>
+                                <span class="d-block text-muted" style="font-size: 0.85rem; font-weight: 500;">Humidity</span>
+                                <strong id="displayHumidity" class="d-block text-white" style="font-size: 1.3rem;">96%</strong>
+                            </div>
+                        </div>
+
+                        <!-- Wind -->
+                        <div class="inner-glass-card d-flex align-items-center gap-3">
+                            <div class="metric-icon-box" style="background: rgba(167, 139, 250, 0.15); color: #a78bfa;">
+                                <i class="bi bi-wind"></i>
+                            </div>
+                            <div>
+                                <span class="d-block text-muted" style="font-size: 0.85rem; font-weight: 500;">Wind</span>
+                                <strong id="displayWind" class="d-block text-white" style="font-size: 1.3rem;">4.8 km/h</strong>
+                            </div>
+                        </div>
+
+                        <!-- Rain Probability -->
+                        <div class="inner-glass-card d-flex align-items-center gap-3">
+                            <div class="metric-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                <i class="bi bi-cloud-rain-heavy-fill"></i>
+                            </div>
+                            <div>
+                                <span class="d-block text-muted" style="font-size: 0.85rem; font-weight: 500;">Rain</span>
+                                <strong id="displayRain" class="d-block text-white" style="font-size: 1.3rem;">0.5%</strong>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <!-- Bottom Section: 7-Day Forecast -->
+                <div class="forecast-section border-top pt-4" style="border-color: rgba(255,255,255,0.08) !important;">
+                    <h6 class="mb-4" style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">7-Day Forecast</h6>
+                    
+                    <div class="forecast-scroll-row" id="forecastScrollRow">
+                        <!-- Day 1 -->
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">2026-08-11</span>
+                            <div class="mb-2"><i class="bi bi-cloud-drizzle-fill" style="font-size: 1.8rem; color: #38bdf8;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">26.6&deg; / 32.3&deg;</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">90% rain</span>
+                        </div>
+
+                        <!-- Day 2 -->
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">2026-08-12</span>
+                            <div class="mb-2"><i class="bi bi-cloud-rain-fill" style="font-size: 1.8rem; color: #38bdf8;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">26&deg; / 32.6&deg;</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">97% rain</span>
+                        </div>
+
+                        <!-- Day 3 -->
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">2026-08-13</span>
+                            <div class="mb-2"><i class="bi bi-cloud-rain-fill" style="font-size: 1.8rem; color: #38bdf8;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">25.5&deg; / 31.1&deg;</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">98% rain</span>
+                        </div>
+
+                        <!-- Day 4 -->
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">2026-08-14</span>
+                            <div class="mb-2"><i class="bi bi-cloud-rain-heavy-fill" style="font-size: 1.8rem; color: #38bdf8;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">25.5&deg; / 31.6&deg;</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">100% rain</span>
+                        </div>
+
+                        <!-- Day 5 -->
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">2026-08-15</span>
+                            <div class="mb-2"><i class="bi bi-cloud-rain-fill" style="font-size: 1.8rem; color: #38bdf8;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">25.9&deg; / 31.7&deg;</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">97% rain</span>
+                        </div>
+
+                        <!-- Day 6 -->
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">2026-08-16</span>
+                            <div class="mb-2"><i class="bi bi-cloud-drizzle-fill" style="font-size: 1.8rem; color: #38bdf8;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">26.2&deg; / 32.5&deg;</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">94% rain</span>
+                        </div>
+
+                        <!-- Day 7 -->
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">2026-08-17</span>
+                            <div class="mb-2"><i class="bi bi-cloud-sun-fill" style="font-size: 1.8rem; color: #facc15;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">27.0&deg; / 33.1&deg;</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">40% rain</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+        {% endif %}
+
+    </div>
+</main>
+
+<!-- Scripts -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // ==========================================
+        // 1. GSAP STAGGERED MENU LOGIC
+        // ==========================================
+        const menuToggleBtn = document.getElementById("menuToggleBtn");
+        const menuIcon = document.getElementById("menuIcon");
+        const menuOverlay = document.getElementById("staggeredMenuOverlay");
+        let isMenuOpen = false;
+
+        const staggeredMenuTl = gsap.timeline({ paused: true });
+        
+        staggeredMenuTl.to(menuOverlay, { display: "flex", opacity: 1, duration: 0.3, ease: "power2.inOut" });
+        staggeredMenuTl.to(".staggered-link", { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, ease: "power3.out" }, "-=0.1");
+
+        menuToggleBtn.addEventListener("click", () => {
+            if (!isMenuOpen) {
+                staggeredMenuTl.play();
+                document.body.style.overflow = "hidden";
+                menuIcon.classList.replace("bi-list", "bi-x-lg");
+            } else {
+                staggeredMenuTl.reverse();
+                document.body.style.overflow = "auto";
+                menuIcon.classList.replace("bi-x-lg", "bi-list");
+            }
+            isMenuOpen = !isMenuOpen;
+        });
+
+        // ==========================================
+        // 2. SPOTLIGHT CARD EFFECT
+        // ==========================================
+        const spotlightCards = document.querySelectorAll('.card-spotlight');
+        spotlightCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // ==========================================
+        // 3. AUTO LOCATION DETECT (Top Pill)
+        // ==========================================
+        const topLocationEl = document.getElementById("currentLocation");
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+                    const data = await res.json();
+                    const address = data.address || {};
+                    const city = address.city || address.town || address.village || address.county || "Current Location";
+                    if (topLocationEl) topLocationEl.textContent = city;
+                } catch (e) {
+                    console.error("Geocoding failed", e);
+                }
+            }, () => {
+                if (topLocationEl) topLocationEl.textContent = "Howrah";
+            });
+        }
+
+        // ==========================================
+        // 4. LIVE WEATHER AUTOLOAD
+        // ==========================================
+        async function fetchLiveWeather(lat, lon, locationTitle = "Local Field") {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone=auto`);
+                const data = await res.json();
+                if (!data || !data.current) return;
+
+                const curr = data.current;
+                const daily = data.daily || {};
+
+                function getWeatherDesc(code) {
+                    const codes = {
+                        0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+                        45: "Foggy", 48: "Depositing Rime Fog", 51: "Light Drizzle", 53: "Moderate Drizzle",
+                        55: "Dense Drizzle", 61: "Slight Rain", 63: "Moderate Rain", 65: "Heavy Rain",
+                        71: "Slight Snow", 73: "Moderate Snow", 75: "Heavy Snow", 80: "Slight Rain Showers",
+                        81: "Moderate Rain Showers", 82: "Violent Showers", 95: "Thunderstorm"
+                    };
+                    return codes[code] || "Clear Sky";
+                }
+
+                function getWeatherIcon(code) {
+                    if (code === 0 || code === 1) return 'bi-sun-fill text-warning';
+                    if (code === 2 || code === 3) return 'bi-cloud-sun-fill text-info';
+                    if (code >= 45 && code <= 48) return 'bi-cloud-fog2-fill text-secondary';
+                    if (code >= 51 && code <= 67) return 'bi-cloud-drizzle-fill text-primary';
+                    if (code >= 71 && code <= 77) return 'bi-snow text-light';
+                    if (code >= 80 && code <= 82) return 'bi-cloud-rain-heavy-fill text-primary';
+                    if (code >= 95) return 'bi-cloud-lightning-rain-fill text-warning';
+                    return 'bi-cloud-sun-fill text-info';
+                }
+
+                // Update Fallback / Top Display Elements if present
+                const nameEl = document.getElementById("displayFarmName");
+                const tempEl = document.getElementById("displayTemp");
+                const condEl = document.getElementById("displayCondition");
+                const humEl = document.getElementById("displayHumidity");
+                const windEl = document.getElementById("displayWind");
+                const rainEl = document.getElementById("displayRain");
+
+                if (nameEl && locationTitle) nameEl.textContent = locationTitle;
+                if (tempEl && curr.temperature_2m !== undefined) tempEl.textContent = `${Math.round(curr.temperature_2m)}°`;
+                if (condEl && curr.weather_code !== undefined) condEl.textContent = getWeatherDesc(curr.weather_code);
+                if (humEl && curr.relative_humidity_2m !== undefined) humEl.textContent = `${curr.relative_humidity_2m}%`;
+                if (windEl && curr.wind_speed_10m !== undefined) windEl.textContent = `${curr.wind_speed_10m} km/h`;
+                if (rainEl) rainEl.textContent = `${curr.precipitation || 0}%`;
+
+                // Update 7-Day Forecast Row
+                const forecastRow = document.getElementById("forecastScrollRow");
+                if (forecastRow && daily.time && daily.time.length) {
+                    forecastRow.innerHTML = daily.time.map((date, i) => {
+                        const tMin = Math.round(daily.temperature_2m_min[i]);
+                        const tMax = Math.round(daily.temperature_2m_max[i]);
+                        const rProb = (daily.precipitation_probability_max && daily.precipitation_probability_max[i] != null) ? daily.precipitation_probability_max[i] : 0;
+                        const wCode = (daily.weather_code && daily.weather_code[i] != null) ? daily.weather_code[i] : 0;
+                        const iconClass = getWeatherIcon(wCode);
+
+                        return `
+                        <div class="inner-glass-card forecast-item">
+                            <span class="d-block text-white mb-3" style="font-weight: 600;">${date}</span>
+                            <div class="mb-2"><i class="bi ${iconClass}" style="font-size: 1.8rem;"></i></div>
+                            <strong class="d-block text-white mb-2" style="font-size: 1.1rem;">${tMin}° / ${tMax}°</strong>
+                            <span class="d-block text-muted" style="font-size: 0.85rem;">${rProb}% rain</span>
+                        </div>
+                        `;
+                    }).join("");
+                }
+            } catch (err) {
+                console.error("Live weather fetch failed", err);
+            }
+        }
+
+        // Trigger Live Weather on load for fallback card
+        const fallbackCard = document.getElementById("displayTemp");
+        if (fallbackCard) {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => fetchLiveWeather(pos.coords.latitude, pos.coords.longitude, "Local Field Weather"),
+                    async () => {
+                        try {
+                            const ipRes = await fetch("https://ipapi.co/json/");
+                            const ipData = await ipRes.json();
+                            fetchLiveWeather(ipData.latitude, ipData.longitude, ipData.city || "Local Field Weather");
+                        } catch (e) {
+                            fetchLiveWeather(22.5726, 88.3639, "Howrah Farm");
+                        }
+                    }
+                );
+            } else {
+                fetchLiveWeather(22.5726, 88.3639, "Howrah Farm");
+            }
+        }
+
+        // ==========================================
+        // 5. LOGOUT ACTION
+        // ==========================================
+        const menuLogoutBtn = document.getElementById("menuLogoutBtn");
+        if (menuLogoutBtn) {
+            menuLogoutBtn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch("/api/logout", { method: "POST" });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = "/login";
+                    }
+                } catch (err) {
+                    console.error("Logout error", err);
+                    window.location.href = "/login";
+                }
+            });
+        }
+    });
+
+    // ==========================================
+    // GLOBAL CLICK SPARK ENGINE
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        // Spark Configuration (Matching your React props)
+        const sparkCount = 8;
+        const sparkSize = 6;     // Base size in pixels
+        const sparkRadius = 30;  // How far they travel
+        const duration = 400;    // Milliseconds
+
+        for (let i = 0; i < sparkCount; i++) {
+            const spark = document.createElement('div');
+            spark.classList.add('click-spark');
+            document.body.appendChild(spark);
+
+            // Calculate radial explosion angle
+            const angle = (i * 2 * Math.PI) / sparkCount;
+            
+            // X and Y travel distances
+            const tx = Math.cos(angle) * sparkRadius;
+            const ty = Math.sin(angle) * sparkRadius;
+
+            // Set exact click position
+            spark.style.left = `${e.clientX}px`;
+            spark.style.top = `${e.clientY}px`;
+            spark.style.width = `${sparkSize}px`;
+            spark.style.height = `${sparkSize}px`;
+            
+            // Set the transition duration
+            spark.style.transition = `transform ${duration}ms ease-out, opacity ${duration}ms ease-out`;
+
+            // Trigger the explosion animation on the very next frame
+            requestAnimationFrame(() => {
+                spark.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`;
+                spark.style.opacity = '0';
+            });
+
+            // Clean up the DOM element after the animation finishes
+            setTimeout(() => {
+                spark.remove();
+            }, duration);
+        }
+    });
+</script>
+
+</body>
+</html>

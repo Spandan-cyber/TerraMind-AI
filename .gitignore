@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment variables & Local secrets
+.env
+.env.local
+.env.*.local
+
+# VS Code & IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs & Temp
+*.log
+*.tmp
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache & tests
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Build & packaging
+build/
+dist/
+*.egg-info/
+
+# Uploads & Temp Data
+uploads/
+unwanted_index/
+
+# Cloud & Earth Engine Credentials (CRITICAL)
+credentials/
+service_account.json
+*service_account*.json
+secrets/
+*.pem
+*.key
+
+# Whitelist static JSON assets (Lottie, config schemas)
+!static/**/*.json
+!static/*.json

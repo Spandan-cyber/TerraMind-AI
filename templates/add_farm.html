@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Farm - TerraMind</title>
+
+    <!-- FAVICON LINK -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-terramind.png') }}">
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet & Leaflet Draw for Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+
+    <!-- GSAP for Menu -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* ==========================================================
+           TERRAMIND FROST UI BASE ENGINE
+        ========================================================== */
+        :root {
+            --tm-emerald: #10b981;
+            --frost-bg: rgba(20, 20, 25, 0.4);
+            --frost-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body, html {
+            background-color: #000000 !important;
+            color: var(--text-main) !important;
+            font-family: 'Poppins', sans-serif !important;
+            margin: 0 !important; padding: 0 !important;
+            overflow-x: hidden !important;
+            min-height: 100vh;
+        }
+
+        /* --- Ambient Background Orbs --- */
+        .ambient-orb-1, .ambient-orb-2 {
+            position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.4; z-index: -1; pointer-events: none;
+            animation: floatOrb 20s ease-in-out infinite alternate;
+        }
+        .ambient-orb-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(16, 185, 129, 0.15); } 
+        .ambient-orb-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(56, 189, 248, 0.1); animation-delay: -10s; } 
+        @keyframes floatOrb { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(10%, 15%) scale(1.2); } }
+
+        /* --- Main Layout --- */
+        .content {
+            margin-left: 0 !important; width: 100% !important; max-width: 100% !important;
+            padding: 100px 3% 30px 3% !important; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- The Fixed, Edge-to-Edge Frosted Navbar --- */
+        .topbar {
+            position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+            width: 100vw !important; height: 80px !important;
+            margin: 0 !important; border-radius: 0 !important; border: none !important;
+            border-bottom: 1px solid var(--frost-border) !important; box-sizing: border-box !important;
+            z-index: 2000 !important; 
+            background: rgba(10, 10, 12, 0.7) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important; -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 30px !important;
+        }
+
+        /* --- Glass Panels --- */
+        .frost-panel {
+            background: var(--frost-bg) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important; -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            border: 1px solid var(--frost-border) !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+            border-radius: 24px !important; color: var(--text-main) !important; transition: all 0.4s ease !important;
+        }
+
+        /* --- Glassmorphism Form Inputs --- */
+        .glass-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--tm-emerald);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+        .glass-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+        
+        /* Fix for select dropdown options in dark mode */
+        select.glass-input option {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        /* Custom scrollbar for the form */
+        #farmForm::-webkit-scrollbar { width: 4px; }
+        #farmForm::-webkit-scrollbar-track { background: transparent; }
+        #farmForm::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        /* --- Sliding Action Buttons --- */
+        .btn-slide {
+            position: relative; overflow: hidden; z-index: 1; display: inline-flex; align-items: center; justify-content: center;
+            transition: transform 0.2s ease, border-color 0.3s ease !important;
+            background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important; border-radius: 12px !important; font-weight: 600; text-decoration: none; padding: 12px 24px;
+        }
+        .btn-slide span { position: relative; z-index: 2; transition: color 0.3s ease; }
+        .btn-slide::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            transform: translateX(-101%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: inherit;
+        }
+        .btn-slide:hover::after { transform: translateX(0); }
+        .slide-emerald::after { background: var(--tm-emerald); }
+        .btn-slide.slide-emerald:hover span { color: #000 !important; }
+
+        /* --- Map Styling --- */
+        .map-container {
+            width: 100%;
+            height: 100%;
+            min-height: 560px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            z-index: 1;
+        }
+        #farmMap {
+            width: 100%;
+            height: 100%;
+            min-height: 560px;
+            background: #111;
+            z-index: 1;
+        }
+        /* Darkens the default map tiles to fit the dark theme */
+        .leaflet-layer, .leaflet-control-zoom-in, .leaflet-control-zoom-out, .leaflet-control-attribution {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+
+        /* ==========================================================
+           GLOBAL CLICK SPARK EFFECT
+        ========================================================== */
+        .click-spark {
+            position: fixed;
+            pointer-events: none; /* Ensures sparks don't block clicks */
+            z-index: 9999;
+            border-radius: 50%;
+            background-color: var(--tm-emerald, #10b981);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        /* --- Menu Overrides --- */
+        #staggeredMenuOverlay { z-index: 1900 !important; }
+        .staggered-link { transform: translateY(50px); opacity: 0; }
+    </style>
+</head>
+<body>
+
+<!-- Ambient Background Orbs -->
+<div class="ambient-orb-1"></div>
+<div class="ambient-orb-2"></div>
+
+<!-- ===================================================== -->
+<!-- Top Navbar (Fixed & Frosted) -->
+<!-- ===================================================== -->
+<header class="topbar">
+    <div class="d-flex align-items-center gap-3">
+        <button id="menuToggleBtn" class="btn text-white border-0 p-1" style="font-size: 1.8rem; outline: none;">
+            <i id="menuIcon" class="bi bi-list transition-all"></i>
+        </button>
+        <div class="d-none d-sm-block">
+            <h4 class="mb-0" style="color: #fff; font-weight: 700; letter-spacing: 0.5px;">
+                Terra<span style="color: var(--tm-emerald);">Mind</span>
+            </h4>
+        </div>
+    </div>
+
+    <div class="top-right d-flex align-items-center gap-3">
+        <div class="location-pill d-none d-md-flex align-items-center gap-2" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 6px 14px;">
+            <i class="bi bi-geo-alt-fill" style="color: var(--tm-emerald);"></i>
+            <span id="currentLocation" style="font-size: 0.85rem;">Howrah</span>
+        </div>
+        
+        <!-- Profile Chip with Dynamic Image Logic -->
+        <div class="profile d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.02); padding: 4px 14px 4px 4px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+            <div id="userAvatar" class="avatar" style="display:flex; width: 38px; height: 38px; border-radius: 50%; align-items: center; justify-content: center; background: transparent; padding: 0; overflow: hidden;">
+                {% if session.get('profile_photo') %}
+                    <img src="{{ session.get('profile_photo') }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                {% else %}
+                    <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                {% endif %}
+            </div>
+            <div class="d-none d-sm-block" style="line-height: 1.2;">
+                <strong id="userName" style="display:block; font-size: 13px; color: #fff;">{{ session.get('full_name') or 'Spandan Das' }}</strong>
+                <small id="userRoleOrPhone" style="display:block; font-size: 10px; color: var(--text-muted);">Premium</small>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ===================================================== -->
+<!-- FULL SCREEN STAGGERED MENU OVERLAY -->
+<!-- ===================================================== -->
+<div id="staggeredMenuOverlay" class="position-fixed inset-0" style="top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(24px); display: none; opacity: 0; flex-direction: column; justify-content: flex-start; padding-left: 15%; padding-top: 120px; overflow-y: auto;">
+    <div class="d-flex flex-column gap-4 text-white" style="font-size: 2.5rem; font-weight: 700;">
+        <a href="/dashboard" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">01</span> Dashboard</a>
+        <a href="/farms" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">02</span> My Farms</a>
+        <a href="/add-farm" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:1;">03</span> Add Farm</a>
+        <a href="/history" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">04</span> Analysis History</a>
+        <a href="/weather" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">05</span> Weather</a>
+        <a href="/advisory" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">06</span> AI Advisories</a>
+        <a href="/profile" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">07</span> Profile & Settings</a>
+        <a href="#" id="menuLogoutBtn" class="staggered-link text-danger text-decoration-none d-flex align-items-center mt-4" style="font-size: 1.8rem;"><i class="bi bi-box-arrow-right mr-3" style="margin-right:15px;"></i> Logout</a>
+    </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MAIN CONTENT: ADD FARM (SPLIT LAYOUT) -->
+<!-- ===================================================== -->
+<main class="content">
+
+    <div class="row w-100 m-0 gap-4 gap-lg-0 h-100 flex-grow-1">
+        
+        <!-- Left Side: Form Panel -->
+        <div class="col-12 col-lg-4 d-flex flex-column pe-lg-4 h-100">
+            
+            <a href="/farms" class="text-decoration-none mb-3 d-inline-flex align-items-center" style="color: var(--tm-emerald); font-weight: 500;">
+                <i class="bi bi-arrow-left mr-2" style="margin-right: 8px;"></i> Dashboard
+            </a>
+
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-seedling-fill d-none d-lg-block" style="color: var(--tm-emerald); font-size: 1.8rem;"></i>
+                <h1 style="font-size: 2.2rem; font-weight: 700; letter-spacing: -1px; color: #fff; margin: 0;">Add New Farm</h1>
+            </div>
+            
+            <p style="color: var(--text-muted); font-size: 0.90rem; margin-bottom: 20px;">Save your farm once. TerraMind will remember its boundaries forever.</p>
+
+            <!-- Scrollable Form Container -->
+            <form action="/add-farm" method="POST" id="farmForm" class="frost-panel p-3 d-flex flex-column gap-3 flex-grow-1" style="overflow-y: auto; max-height: calc(100vh - 250px);">
+                
+                <input type="hidden" name="farm_boundaries" id="farmBoundaries">
+
+                <!-- 1. Search Location -->
+                <div>
+                    <label class="form-label mb-1" style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;"><i class="bi bi-geo-alt-fill text-danger mr-1" style="margin-right: 4px;"></i> Search Location</label>
+                    <div class="d-flex gap-2">
+                        <input type="text" id="mapSearchInput" class="glass-input" placeholder="Village, City, Farm">
+                        <button type="button" id="mapSearchBtn" class="btn" style="background: var(--tm-emerald); color: #000; border-radius: 12px; font-weight: 600; padding: 10px 18px;">Search</button>
+                    </div>
+                </div>
+
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 5px 0;">
+
+                <!-- Form Fields -->
+                <div>
+                    <label class="form-label mb-1" style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">Farm Name</label>
+                    <input type="text" name="farm_name" class="glass-input" placeholder="e.g. North Field" required>
+                </div>
+
+                <div>
+                    <label class="form-label mb-1" style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">Crop</label>
+                    <select name="crop_type" class="glass-input" required>
+                        <option value="" disabled selected>Select a crop</option>
+                        <option value="Rice">Rice</option>
+                        <option value="Wheat">Wheat</option>
+                        <option value="Maize">Maize</option>
+                        <option value="Cotton">Cotton</option>
+                        <option value="Sugarcane">Sugarcane</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <div class="w-50">
+                        <label class="form-label mb-1" style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">Village</label>
+                        <input type="text" name="village" class="glass-input" placeholder="e.g. Domjur" required>
+                    </div>
+                    <div class="w-50">
+                        <label class="form-label mb-1" style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">District</label>
+                        <input type="text" name="district" class="glass-input" placeholder="e.g. Howrah" required>
+                    </div>
+                </div>
+
+                <!-- State Field -->
+                <div>
+                    <label class="form-label mb-1" style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">State</label>
+                    <input type="text" name="state" class="glass-input" placeholder="e.g. West Bengal" required>
+                </div>
+
+                <!-- Notes Field -->
+                <div>
+                    <label class="form-label mb-1" style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">Notes</label>
+                    <textarea name="notes" class="glass-input" placeholder="Add any specific details about this farm..." rows="2" style="resize: none;"></textarea>
+                </div>
+
+                <!-- Save & Cancel Buttons -->
+                <div class="mt-3 d-flex flex-column gap-2 mt-auto">
+                    <button type="submit" class="btn-slide slide-emerald w-100 py-2 border-0" id="saveFarmBtn">
+                        <span><i class="bi bi-floppy-fill mr-2" style="margin-right: 8px;"></i> Save Farm</span>
+                    </button>
+                    <a href="/farms" class="btn w-100 py-2" style="border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 12px; font-weight: 500; transition: background 0.2s; text-decoration: none; text-align: center;">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+
+        </div>
+
+        <!-- Right Side: Interactive Map -->
+        <div class="col-12 col-lg-8 h-100 position-relative">
+            <div class="map-container frost-panel p-1 w-100 h-100 position-relative" style="border-radius: 20px; overflow: hidden; min-height: 560px;">
+                <!-- Map Anchor -->
+                <div id="farmMap" style="width: 100%; height: 100%; min-height: 560px; z-index: 1;"></div>
+                
+                <!-- Floating Map Metrics Panel -->
+                <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1000; pointer-events: none;">
+                    <div class="frost-panel p-2 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: rgba(10, 10, 12, 0.9) !important; border-radius: 16px !important; backdrop-filter: blur(15px);">
+                        <span style="font-size: 0.85rem; color: #fff;"><strong style="color: var(--tm-emerald);">Area:</strong> <span id="metricArea">--</span></span>
+                        <span style="font-size: 0.85rem; color: #fff;"><strong style="color: var(--tm-emerald);">Perimeter:</strong> <span id="metricPerimeter">--</span></span>
+                        <span style="font-size: 0.85rem; color: #fff;"><strong style="color: var(--tm-emerald);">Vertices:</strong> <span id="metricVertices">0</span></span>
+                        <span style="font-size: 0.85rem; color: #fff;"><strong style="color: var(--tm-emerald);">Status:</strong> <span id="metricStatus" class="text-warning fw-bold">Waiting</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // ==========================================
+        // 1. GSAP STAGGERED MENU LOGIC
+        // ==========================================
+        const menuToggleBtn = document.getElementById("menuToggleBtn");
+        const menuIcon = document.getElementById("menuIcon");
+        const menuOverlay = document.getElementById("staggeredMenuOverlay");
+        let isMenuOpen = false;
+
+        const staggeredMenuTl = gsap.timeline({ paused: true });
+        
+        staggeredMenuTl.to(menuOverlay, { display: "flex", opacity: 1, duration: 0.3, ease: "power2.inOut" });
+        staggeredMenuTl.to(".staggered-link", { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, ease: "power3.out" }, "-=0.1");
+
+        menuToggleBtn.addEventListener("click", () => {
+            if (!isMenuOpen) {
+                staggeredMenuTl.play();
+                document.body.style.overflow = "hidden";
+                menuIcon.classList.replace("bi-list", "bi-x-lg");
+            } else {
+                staggeredMenuTl.reverse();
+                document.body.style.overflow = "auto";
+                menuIcon.classList.replace("bi-x-lg", "bi-list");
+            }
+            isMenuOpen = !isMenuOpen;
+        });
+
+        // ==========================================
+        // 2. LEAFLET MAP & DRAWING ENGINE
+        // ==========================================
+        const map = L.map('farmMap').setView([22.5726, 88.3639], 13); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        const drawControl = new L.Control.Draw({
+            draw: {
+                polygon: { 
+                    allowIntersection: false, 
+                    showArea: true, 
+                    shapeOptions: { color: '#10b981', fillOpacity: 0.4 } 
+                },
+                polyline: false, 
+                circle: false, 
+                rectangle: true, 
+                marker: false, 
+                circlemarker: false
+            },
+            edit: { featureGroup: drawnItems }
+        });
+        map.addControl(drawControl);
+
+        // --- Farm Metrics Calculation ---
+        function computeAreaSafe(latlngs) {
+            if (window.L && L.GeometryUtil && typeof L.GeometryUtil.geodesicArea === 'function') {
+                return L.GeometryUtil.geodesicArea(latlngs);
+            }
+            // Standard spherical polygon area calculation
+            const RADIUS = 6378137;
+            let total = 0;
+            const len = latlngs.length;
+            if (len > 2) {
+                for (let i = 0; i < len; i++) {
+                    const p1 = latlngs[i];
+                    const p2 = latlngs[(i + 1) % len];
+                    total += ((p2.lng - p1.lng) * Math.PI / 180) * (2 + Math.sin(p1.lat * Math.PI / 180) + Math.sin(p2.lat * Math.PI / 180));
+                }
+                total = Math.abs(total * RADIUS * RADIUS / 2.0);
+            }
+            return total;
+        }
+
+        function updateMapMetrics(layer) {
+            let latlngs = layer.getLatLngs();
+            // Handle both Polygons (array of arrays) and Rectangles
+            if (Array.isArray(latlngs[0])) { latlngs = latlngs[0]; }
+            
+            // Calculate Area
+            const area = computeAreaSafe(latlngs); 
+            const areaHa = area / 10000;
+            
+            // Calculate Perimeter
+            let perimeter = 0;
+            for (let i = 0; i < latlngs.length; i++) {
+                const p1 = latlngs[i];
+                const p2 = latlngs[(i + 1) % latlngs.length];
+                perimeter += p1.distanceTo(p2);
+            }
+            
+            // Update the DOM
+            document.getElementById('metricArea').innerText = areaHa.toFixed(2) + " ha";
+            document.getElementById('metricPerimeter').innerText = perimeter.toFixed(2) + " m";
+            document.getElementById('metricVertices').innerText = latlngs.length;
+            
+            const statusEl = document.getElementById('metricStatus');
+            statusEl.innerText = "Ready to Save";
+            statusEl.className = "text-success fw-bold";
+        }
+
+        // When a user finishes drawing
+        map.on(L.Draw.Event.CREATED, function (event) {
+            drawnItems.clearLayers(); // Only allow 1 farm per save
+            const layer = event.layer;
+            drawnItems.addLayer(layer);
+            
+            // Update hidden input for backend
+            document.getElementById('farmBoundaries').value = JSON.stringify(layer.toGeoJSON().geometry);
+            
+            // Update live metrics
+            updateMapMetrics(layer);
+        });
+
+        // When a user edits a shape
+        map.on('draw:edited', function (e) {
+            e.layers.eachLayer(function (layer) {
+                document.getElementById('farmBoundaries').value = JSON.stringify(layer.toGeoJSON().geometry);
+                updateMapMetrics(layer);
+            });
+        });
+
+        // When a user deletes a shape
+        map.on('draw:deleted', function () {
+            document.getElementById('farmBoundaries').value = '';
+            document.getElementById('metricArea').innerText = '--';
+            document.getElementById('metricPerimeter').innerText = '--';
+            document.getElementById('metricVertices').innerText = '0';
+            
+            const statusEl = document.getElementById('metricStatus');
+            statusEl.innerText = "Waiting";
+            statusEl.className = "text-warning fw-bold";
+        });
+
+        // --- NEW: Handle Location Search & Auto-Fill ---
+        const searchBtn = document.getElementById('mapSearchBtn');
+        const searchInput = document.getElementById('mapSearchInput');
+
+        if (searchBtn && searchInput) {
+            searchBtn.addEventListener('click', async () => {
+                const query = searchInput.value.trim();
+                if (!query) return;
+                
+                // Change button text to show loading state
+                searchBtn.innerText = '...'; 
+                
+                try {
+                    // We added &addressdetails=1 to get the exact village/district/state breakdown
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1`);
+                    const data = await res.json();
+                    
+                    if (data && data.length > 0) {
+                        const bestResult = data[0];
+                        
+                        // 1. Fly to the location on the map
+                        map.flyTo([parseFloat(bestResult.lat), parseFloat(bestResult.lon)], 15, { duration: 1.5 });
+                        
+                        // 2. Auto-fill the form fields
+                        const address = bestResult.address || {};
+                        
+                        const villageInput = document.querySelector('input[name="village"]');
+                        const districtInput = document.querySelector('input[name="district"]');
+                        const stateInput = document.querySelector('input[name="state"]');
+                        
+                        // OpenStreetMap uses different names depending on the area size, so we check a few fallbacks
+                        if (villageInput) {
+                            villageInput.value = address.village || address.suburb || address.town || address.city || "";
+                        }
+                        if (districtInput) {
+                            districtInput.value = address.state_district || address.county || address.city_district || "";
+                        }
+                        if (stateInput) {
+                            stateInput.value = address.state || "";
+                        }
+                        
+                    } else {
+                        alert("Location not found. Please try adding more details (e.g., district or state).");
+                    }
+                } catch (error) {
+                    console.error("Search failed:", error);
+                } finally {
+                    searchBtn.innerText = 'Search';
+                }
+            });
+
+            // Trigger search on Enter key press
+            searchInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
+                    searchBtn.click();
+                }
+            });
+        }
+
+        // ==========================================
+        // 3. AUTO LOCATION DETECT (Top Pill & Map Recenter)
+        // ==========================================
+        const topLocationEl = document.getElementById("currentLocation");
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                // Recenter map to user's actual location
+                map.setView([lat, lon], 14);
+                
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                    const data = await res.json();
+                    const address = data.address || {};
+                    const city = address.city || address.town || address.village || address.county || "Current Location";
+                    if (topLocationEl) topLocationEl.textContent = city;
+                } catch (e) {
+                    console.error("Geocoding failed", e);
+                }
+            }, () => {
+                if (topLocationEl) topLocationEl.textContent = "Howrah";
+            });
+        }
+
+        // ==========================================
+        // 4. LOGOUT ACTION
+        // ==========================================
+        const menuLogoutBtn = document.getElementById("menuLogoutBtn");
+        if (menuLogoutBtn) {
+            menuLogoutBtn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch("/api/logout", { method: "POST" });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = "/login";
+                    }
+                } catch (err) {
+                    console.error("Logout error", err);
+                    window.location.href = "/login";
+                }
+            });
+        }
+    });
+
+    // ==========================================
+    // GLOBAL CLICK SPARK ENGINE
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        // Spark Configuration (Matching your React props)
+        const sparkCount = 8;
+        const sparkSize = 6;     // Base size in pixels
+        const sparkRadius = 30;  // How far they travel
+        const duration = 400;    // Milliseconds
+
+        for (let i = 0; i < sparkCount; i++) {
+            const spark = document.createElement('div');
+            spark.classList.add('click-spark');
+            document.body.appendChild(spark);
+
+            // Calculate radial explosion angle
+            const angle = (i * 2 * Math.PI) / sparkCount;
+            
+            // X and Y travel distances
+            const tx = Math.cos(angle) * sparkRadius;
+            const ty = Math.sin(angle) * sparkRadius;
+
+            // Set exact click position
+            spark.style.left = `${e.clientX}px`;
+            spark.style.top = `${e.clientY}px`;
+            spark.style.width = `${sparkSize}px`;
+            spark.style.height = `${sparkSize}px`;
+            
+            // Set the transition duration
+            spark.style.transition = `transform ${duration}ms ease-out, opacity ${duration}ms ease-out`;
+
+            // Trigger the explosion animation on the very next frame
+            requestAnimationFrame(() => {
+                spark.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`;
+                spark.style.opacity = '0';
+            });
+
+            // Clean up the DOM element after the animation finishes
+            setTimeout(() => {
+                spark.remove();
+            }, duration);
+        }
+    });
+</script>
+
+</body>
+</html>

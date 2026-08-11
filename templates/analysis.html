@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraMind Analysis Workspace</title>
+
+    <!-- FAVICON LINK -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-terramind.png') }}">
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- GSAP for Menu -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* ==========================================================
+           TERRAMIND FROST UI BASE ENGINE & OVERRIDES
+        ========================================================== */
+        :root {
+            --tm-emerald: #10b981;
+            --frost-bg: rgba(20, 20, 25, 0.4);
+            --frost-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1 !important; /* Brightened from dark gray to crisp light slate */
+        }
+
+        /* ==========================================================
+           TEXT CONTRAST FIX FOR SUBTEXT & LABELS
+        ========================================================== */
+        /* Force all muted text and small subtitles to high-contrast off-white */
+        .text-muted, small, p, .form-text {
+            color: #cbd5e1 !important; 
+        }
+
+        /* Keep primary headings pure white */
+        h1, h2, h3, h4, h5, h6, strong {
+            color: #ffffff !important;
+        }
+
+        body,
+        html {
+            background-color: #000000 !important;
+            color: var(--text-main) !important;
+            font-family: 'Poppins', sans-serif !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+        }
+
+        /* --- Ambient Background Orbs --- */
+        .ambient-orb-1,
+        .ambient-orb-2 {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.3;
+            z-index: -1;
+            pointer-events: none;
+            animation: floatOrb 20s ease-in-out infinite alternate;
+        }
+
+        .ambient-orb-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .ambient-orb-2 {
+            bottom: -20%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: rgba(56, 189, 248, 0.15);
+            animation-delay: -10s;
+        }
+
+        @keyframes floatOrb {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(10%, 15%) scale(1.2);
+            }
+        }
+
+        /* --- Main Layout --- */
+        .content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 120px 5% 50px 5% !important;
+        }
+
+        /* --- The Fixed, Edge-to-Edge Frosted Navbar --- */
+        .topbar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100vw !important;
+            height: 80px !important;
+            z-index: 2000 !important;
+            background: rgba(10, 10, 12, 0.7) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important;
+            border-bottom: 1px solid var(--frost-border) !important;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px !important;
+        }
+
+        /* --- Glass Panels --- */
+        .frost-panel {
+            background: var(--frost-bg) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important;
+            border: 1px solid var(--frost-border) !important;
+            border-radius: 20px !important;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .inner-glass-card {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 16px;
+            padding: 20px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .inner-glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, 0.3) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        /* --- Spotlight Effect --- */
+        .card-spotlight {
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+            --spotlight-color: rgba(16, 185, 129, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-spotlight::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle 300px at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card-spotlight:hover::before {
+            opacity: 1;
+        }
+
+        .card-spotlight>* {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* --- Sliding Action Buttons --- */
+        .btn-slide {
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            border-radius: 12px !important;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 10px 20px;
+        }
+
+        .btn-slide span {
+            position: relative;
+            z-index: 2;
+            transition: color 0.3s ease;
+        }
+
+        .btn-slide::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            transform: translateX(-101%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: inherit;
+        }
+
+        .btn-slide:hover::after {
+            transform: translateX(0);
+        }
+
+        .slide-emerald::after {
+            background: var(--tm-emerald);
+        }
+
+        .slide-blue::after {
+            background: #38bdf8;
+        }
+
+        .btn-slide:hover span {
+            color: #000 !important;
+        }
+
+        /* --- Modals & Grid Overrides --- */
+        .modal-content {
+            background: rgba(20, 20, 25, 0.95) !important;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px;
+            color: #fff;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        .summary-grid,
+        .indices-grid,
+        .metadata-grid,
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .image-grid,
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+        }
+
+        #staggeredMenuOverlay {
+            z-index: 1900 !important;
+        }
+
+        .staggered-link {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+
+        /* --- Click Spark Particle --- */
+        .click-spark {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 50%;
+            background-color: var(--tm-emerald);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+    </style>
+
+    <!-- Lottie Web Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+</head>
+
+<body>
+
+    <!-- ===================================================== -->
+    <!-- SATELLITE LOADING SCREEN OVERLAY -->
+    <!-- ===================================================== -->
+    <div id="analysisLoadingOverlay" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+    ">
+        <div id="satelliteLottieAnim" style="width: 250px; height: 250px;"></div>
+        <h3 class="fw-bold mt-4" style="letter-spacing: -0.02em;">Analyzing Orbital Telemetry...</h3>
+        <p class="text-muted mt-2">Processing multispectral bands (NDVI, NDWI, EVI) via Sentinel-2</p>
+    </div>
+
+    <div class="ambient-orb-1"></div>
+    <div class="ambient-orb-2"></div>
+
+    <!-- ===================================================== -->
+    <!-- Top Navbar -->
+    <!-- ===================================================== -->
+    <header class="topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button id="menuToggleBtn" class="btn text-white border-0 p-1" style="font-size: 1.8rem; outline: none;"><i
+                    id="menuIcon" class="bi bi-list transition-all"></i></button>
+            <div class="d-none d-sm-block">
+                <h4 class="mb-0" style="color: #fff; font-weight: 700;">Terra<span
+                        style="color: var(--tm-emerald);">Mind</span></h4>
+            </div>
+        </div>
+        <div class="top-right d-flex align-items-center gap-3">
+            <div class="location-pill d-none d-md-flex align-items-center gap-2"
+                style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 6px 14px;">
+                <i class="bi bi-geo-alt-fill" style="color: var(--tm-emerald);"></i><span id="currentLocation"
+                    style="font-size: 0.85rem;">Howrah</span>
+            </div>
+            <div class="profile d-flex align-items-center gap-2"
+                style="background: rgba(255,255,255,0.02); padding: 4px 14px 4px 4px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                <div id="userAvatar" class="avatar"
+                    style="display:flex; width: 38px; height: 38px; border-radius: 50%; background: transparent; padding: 0; overflow: hidden;">
+                    {% if session.get('profile_photo') %}
+                    <img src="{{ session.get('profile_photo') }}" alt="Profile"
+                        style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    {% else %}
+                    <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857"
+                        alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    {% endif %}
+                </div>
+                <div class="d-none d-sm-block" style="line-height: 1.2;">
+                    <strong id="userName" style="display:block; font-size: 13px; color: #fff;">{{
+                        session.get('full_name') or 'Spandan Das' }}</strong>
+                    <small id="userRoleOrPhone"
+                        style="display:block; font-size: 10px; color: var(--text-muted);">Premium</small>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================== -->
+    <!-- GSAP MENU OVERLAY -->
+    <!-- ===================================================== -->
+    <div id="staggeredMenuOverlay" class="position-fixed inset-0"
+        style="top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(24px); display: none; opacity: 0; flex-direction: column; justify-content: flex-start; padding-left: 15%; padding-top: 120px; overflow-y: auto;">
+        <div class="d-flex flex-column gap-4 text-white" style="font-size: 2.5rem; font-weight: 700;">
+            <a href="/dashboard" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">01</span>
+                Dashboard</a>
+            <a href="/farms" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">02</span>
+                My Farms</a>
+            <a href="/add-farm" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">03</span>
+                Add Farm</a>
+            <a href="#" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:1;">04</span>
+                Analysis Workspace</a>
+            <a href="/history" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">05</span>
+                Analysis History</a>
+            <a href="/weather" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">06</span>
+                Weather</a>
+            <a href="/advisory" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">07</span>
+                AI Advisories</a>
+            <a href="/profile" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span
+                    style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">08</span>
+                Profile & Settings</a>
+            <a href="#" id="menuLogoutBtn"
+                class="staggered-link text-danger text-decoration-none d-flex align-items-center mt-4"
+                style="font-size: 1.8rem;"><i class="bi bi-box-arrow-right mr-3" style="margin-right:15px;"></i>
+                Logout</a>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- MAIN CONTENT: ANALYSIS WORKSPACE -->
+    <!-- ===================================================== -->
+    <main class="content">
+
+        <!-- Header Actions -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-4">
+            <div>
+                <h1 id="farmTitle"
+                    style="font-size: 2.8rem; font-weight: 700; letter-spacing: -1px; color: #fff; margin-bottom: 5px;">
+                    Loading Farm...</h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem; margin: 0;">Satellite Intelligence Dashboard</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button id="refreshAnalysis" class="btn-slide slide-emerald border-0"><span><i
+                            class="bi bi-arrow-clockwise mr-2" style="margin-right: 6px;"></i> Analyze
+                        Again</span></button>
+                <button id="exportPdf" class="btn-slide slide-blue border-0"><span><i
+                            class="bi bi-file-earmark-pdf mr-2" style="margin-right: 6px;"></i> Export
+                        PDF</span></button>
+            </div>
+        </div>
+
+        <!-- Hero Spotlight Panel -->
+        <section class="frost-panel card-spotlight mb-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+                <div class="z-2">
+                    <span class="badge"
+                        style="background: rgba(16, 185, 129, 0.2); color: var(--tm-emerald); border: 1px solid rgba(16, 185, 129, 0.4); padding: 6px 12px;">Healthy
+                        Crop Monitoring</span>
+                    <h2 class="mt-3 mb-3 fw-bold">Satellite Analysis</h2>
+                    <p style="color: var(--text-muted); max-width: 600px;">Monitor vegetation, crop health, soil
+                        moisture, weather, and AI recommendations from one intelligent workspace.</p>
+                    <div class="d-flex gap-4 mt-4 flex-wrap">
+                        <div><small class="text-muted d-block text-uppercase" style="font-size: 0.75rem;">Capture
+                                Date</small>
+                            <h5 id="captureDate" class="fw-bold m-0">--</h5>
+                        </div>
+                        <div><small class="text-muted d-block text-uppercase" style="font-size: 0.75rem;">Cloud
+                                Cover</small>
+                            <h5 id="cloudCover" class="fw-bold m-0">--</h5>
+                        </div>
+                        <div><small class="text-muted d-block text-uppercase"
+                                style="font-size: 0.75rem;">Quality</small>
+                            <h5 id="qualityScore" class="fw-bold m-0">--</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="z-2 d-flex align-items-center">
+                    <div class="inner-glass-card text-center px-5">
+                        <i class="bi bi-satellite-fill d-block mb-2"
+                            style="font-size: 2.5rem; color: var(--tm-emerald);"></i>
+                        <h4 class="fw-bold m-0">Sentinel-2</h4>
+                        <small class="text-muted">Latest Available Scene</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary Metrics Grid -->
+        <section class="summary-grid mb-5">
+            <div class="inner-glass-card d-flex align-items-center gap-3">
+                <div
+                    style="font-size: 2rem; background: rgba(255,255,255,0.05); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    🌾</div>
+                <div><small class="text-muted d-block">Area</small>
+                    <h4 id="overviewArea" class="m-0 fw-bold">--</h4>
+                </div>
+            </div>
+            <div class="inner-glass-card d-flex align-items-center gap-3">
+                <div
+                    style="font-size: 2rem; background: rgba(255,255,255,0.05); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    📍</div>
+                <div><small class="text-muted d-block">Centroid</small>
+                    <h4 id="overviewLat" class="m-0 fw-bold" style="font-size: 1.1rem;">--</h4>
+                </div>
+            </div>
+            <div class="inner-glass-card d-flex align-items-center gap-3">
+                <div
+                    style="font-size: 2rem; background: rgba(255,255,255,0.05); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    🌤</div>
+                <div><small class="text-muted d-block">Weather</small>
+                    <h4 id="weatherCondition" class="m-0 fw-bold" style="font-size: 1.1rem;">Loading...</h4>
+                </div>
+            </div>
+            <div class="inner-glass-card d-flex align-items-center gap-3">
+                <div
+                    style="font-size: 2rem; background: rgba(255,255,255,0.05); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    🤖</div>
+                <div><small class="text-muted d-block">Health</small>
+                    <h4 id="cropHealth" class="m-0 fw-bold text-success" style="font-size: 1.1rem;">Analyzing...</h4>
+                </div>
+            </div>
+        </section>
+
+        <!-- SATELLITE IMAGERY -->
+        <section class="frost-panel mb-4">
+            <div class="mb-4">
+                <h3 class="fw-bold mb-1"><i class="bi bi-images text-primary mr-2" style="margin-right: 6px;"></i>
+                    Satellite Imagery</h3>
+                <p class="text-muted m-0">Sentinel-2 imagery captured for the selected farm.</p>
+            </div>
+            <div class="image-grid">
+                <div class="inner-glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="m-0 fw-bold">Natural RGB</h5>
+                        <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="modal"
+                            data-bs-target="#rgbInfo"><i class="bi bi-info-circle"></i></button>
+                    </div>
+                    <img id="rgbImage" class="img-fluid rounded mb-3 w-100" src="" alt="RGB Loading..."
+                        style="min-height: 250px; background: rgba(0,0,0,0.5); object-fit: cover;">
+                </div>
+                <div class="inner-glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="m-0 fw-bold">NDVI Visualization</h5>
+                        <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="modal"
+                            data-bs-target="#ndviInfo"><i class="bi bi-info-circle"></i></button>
+                    </div>
+                    <img id="ndviImage" class="img-fluid rounded mb-3 w-100" src="" alt="NDVI Loading..."
+                        style="min-height: 250px; background: rgba(0,0,0,0.5); object-fit: cover;">
+                </div>
+            </div>
+        </section>
+
+        <!-- VEGETATION INTELLIGENCE -->
+        <section class="frost-panel mb-4">
+            <div class="mb-4">
+                <h3 class="fw-bold mb-1"><i class="bi bi-bar-chart-line-fill text-success mr-2"
+                        style="margin-right: 6px;"></i> Vegetation Intelligence</h3>
+                <p class="text-muted m-0">Key vegetation indices derived from Sentinel-2 imagery.</p>
+            </div>
+            <div class="indices-grid">
+                <div class="inner-glass-card">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5 class="fw-bold">NDVI</h5><i class="bi bi-info-circle text-muted" data-bs-toggle="modal"
+                            data-bs-target="#ndviModal" style="cursor: pointer;"></i>
+                    </div>
+                    <h2 id="ndviValue" class="fw-bold text-white mb-2">--</h2>
+                    <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.1);">
+                        <div id="ndviBar" class="progress-bar bg-success" style="width:0%;"></div>
+                    </div><small id="ndviStatus" class="text-muted">Waiting...</small>
+                </div>
+                <div class="inner-glass-card">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5 class="fw-bold">NDWI</h5><i class="bi bi-info-circle text-muted" data-bs-toggle="modal"
+                            data-bs-target="#ndwiModal" style="cursor: pointer;"></i>
+                    </div>
+                    <h2 id="ndwiValue" class="fw-bold text-white mb-2">--</h2>
+                    <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.1);">
+                        <div id="ndwiBar" class="progress-bar bg-primary" style="width:0%;"></div>
+                    </div><small id="ndwiStatus" class="text-muted">Waiting...</small>
+                </div>
+                <div class="inner-glass-card">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5 class="fw-bold">EVI</h5><i class="bi bi-info-circle text-muted" data-bs-toggle="modal"
+                            data-bs-target="#eviModal" style="cursor: pointer;"></i>
+                    </div>
+                    <h2 id="eviValue" class="fw-bold text-white mb-2">--</h2>
+                    <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.1);">
+                        <div id="eviBar" class="progress-bar bg-success" style="width:0%;"></div>
+                    </div><small id="eviStatus" class="text-muted">Waiting...</small>
+                </div>
+                <div class="inner-glass-card">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5 class="fw-bold">SAVI</h5><i class="bi bi-info-circle text-muted" data-bs-toggle="modal"
+                            data-bs-target="#saviModal" style="cursor: pointer;"></i>
+                    </div>
+                    <h2 id="saviValue" class="fw-bold text-white mb-2">--</h2>
+                    <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.1);">
+                        <div id="saviBar" class="progress-bar bg-warning" style="width:0%;"></div>
+                    </div><small id="saviStatus" class="text-muted">Waiting...</small>
+                </div>
+                <div class="inner-glass-card">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5 class="fw-bold">NDMI</h5><i class="bi bi-info-circle text-muted" data-bs-toggle="modal"
+                            data-bs-target="#ndmiModal" style="cursor: pointer;"></i>
+                    </div>
+                    <h2 id="ndmiValue" class="fw-bold text-white mb-2">--</h2>
+                    <div class="progress mb-2" style="height: 6px; background: rgba(255,255,255,0.1);">
+                        <div id="ndmiBar" class="progress-bar bg-info" style="width:0%;"></div>
+                    </div><small id="ndmiStatus" class="text-muted">Waiting...</small>
+                </div>
+            </div>
+        </section>
+
+    <!-- ===================================================== -->
+    <!-- MAGIC BENTO GRID: HEALTH DISTRIBUTION TO ALERTS -->
+    <!-- ===================================================== -->
+    <div class="bento-container mb-4" style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px;">
+        
+        <!-- 1. Health Distribution (Span 6) -->
+        <div class="frost-panel card-spotlight p-4 d-flex flex-column justify-content-between" style="grid-column: span 6; margin-bottom: 0;">
+            <h3 class="fw-bold mb-3">🌾 Health Distribution</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                <div class="inner-glass-card text-center p-3" style="border-bottom: 4px solid var(--tm-emerald) !important;">
+                    <h2 id="healthyPercent" class="fw-bold m-0">--</h2>
+                    <small class="text-muted">Healthy</small>
+                </div>
+                <div class="inner-glass-card text-center p-3" style="border-bottom: 4px solid #facc15 !important;">
+                    <h2 id="moderatePercent" class="fw-bold m-0">--</h2>
+                    <small class="text-muted">Moderate</small>
+                </div>
+                <div class="inner-glass-card text-center p-3" style="border-bottom: 4px solid #ef4444 !important;">
+                    <h2 id="poorPercent" class="fw-bold m-0">--</h2>
+                    <small class="text-muted">Poor</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Satellite Metadata (Span 6) -->
+        <div class="frost-panel card-spotlight p-4 d-flex flex-column justify-content-between" style="grid-column: span 6; margin-bottom: 0;">
+            <h3 class="fw-bold mb-3">☁ Satellite Metadata</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Satellite</small><strong class="text-white" style="font-size: 0.85rem;">Sentinel-2</strong></div>
+                <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Capture Date</small><strong id="captureDateCard" class="text-white" style="font-size: 0.85rem;">--</strong></div>
+                <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Cloud Cover</small><strong id="cloudCoverCard" class="text-white" style="font-size: 0.85rem;">--</strong></div>
+                <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Quality Score</small><strong id="qualityCard" class="text-white" style="font-size: 0.85rem;">--</strong></div>
+                <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Resolution</small><strong class="text-white" style="font-size: 0.85rem;">10 m</strong></div>
+                <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Projection</small><strong class="text-white" style="font-size: 0.85rem;">EPSG:4326</strong></div>
+            </div>
+        </div>
+
+        <!-- 3. AI Agronomist (Span 6) -->
+        <div class="frost-panel card-spotlight p-4 d-flex flex-column" style="grid-column: span 6; margin-bottom: 0;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="fw-bold m-0">🤖 AI Agronomist</h3>
+                <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="modal" data-bs-target="#advisorModal"><i class="bi bi-info-circle"></i></button>
+            </div>
+            <div id="adviceContainer" class="d-flex flex-column gap-3 flex-grow-1 justify-content-center text-muted">Waiting for analysis...</div>
+        </div>
+
+        <!-- 4. Weather Forecast (Span 6) -->
+        <div class="frost-panel card-spotlight p-4 d-flex flex-column" style="grid-column: span 6; margin-bottom: 0;">
+            <h3 class="fw-bold mb-3">🌤 Weather Forecast</h3>
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3" style="border-color: rgba(255,255,255,0.08) !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="weather-icon" style="font-size: 2.8rem; line-height: 1;">☀️</div>
+                    <div>
+                        <h1 id="currentTemp" class="fw-bold m-0" style="font-size: 2.2rem;">--</h1>
+                        <h5 id="weatherConditionWidget" class="text-info m-0" style="font-size: 0.95rem;">--</h5>
+                        <p id="weatherCity" class="text-muted m-0" style="font-size: 0.8rem;">--</p>
+                    </div>
+                </div>
+                <div class="text-end text-muted small" style="line-height: 1.6; font-size: 0.8rem;">
+                    <div>Humidity: <strong id="humidity" class="text-white">--</strong></div>
+                    <div>Wind: <strong id="wind" class="text-white">--</strong></div>
+                    <div>Rain: <strong id="rainProbability" class="text-white">--</strong></div>
+                    <div>UV Index: <strong id="uvIndex" class="text-white">--</strong></div>
+                </div>
+            </div>
+            <div id="forecastGrid" class="d-flex gap-2 overflow-auto pb-1" style="scrollbar-width: thin;"></div>
+        </div>
+
+        <!-- 5. Analytics Dashboard (Span 8) -->
+        <div class="frost-panel card-spotlight p-4" style="grid-column: span 8; margin-bottom: 0;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="fw-bold m-0">📊 Analytics Dashboard</h3>
+                <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="modal" data-bs-target="#trendModal"><i class="bi bi-info-circle"></i></button>
+            </div>
+            <div class="row">
+                <div class="col-md-6"><canvas id="ndviTrendChart"></canvas></div>
+                <div class="col-md-6"><canvas id="healthChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- 6. Alerts & Timeline (Span 4) -->
+        <div class="frost-panel card-spotlight p-4 d-flex flex-column justify-content-between" style="grid-column: span 4; margin-bottom: 0;">
+            <div class="mb-3">
+                <h5 class="fw-bold mb-2">🚨 Alerts</h5>
+                <div id="alertsContainer" class="text-muted small">No active alerts.</div>
+            </div>
+            <div class="border-top pt-3" style="border-color: rgba(255,255,255,0.08) !important;">
+                <h5 class="fw-bold mb-2">📈 Timeline</h5>
+                <div id="historyContainer" class="text-muted small">Waiting for analysis...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Responsive Mobile Fallback -->
+    <style>
+        @media (max-width: 992px) {
+            .bento-container > div {
+                grid-column: span 12 !important;
+            }
+        }
+    </style>
+
+        <!-- CONFIDENCE & SUMMARY -->
+        <div class="row mb-4">
+            <div class="col-12 col-md-6 mb-4 mb-md-0">
+                <section class="frost-panel h-100">
+                    <h3 class="fw-bold mb-3">🛰 Confidence Score</h3>
+                    <div id="confidenceScore" class="score-circle text-success fw-bold" style="font-size: 3.5rem;">--</div>
+                    <div class="progress mt-2" style="height: 8px; background: rgba(255,255,255,0.1);">
+                        <div id="confidenceBar" class="progress-bar bg-success" style="width: 0%; transition: width 0.5s ease;"></div>
+                    </div>
+                </section>
+            </div>
+            <div class="col-12 col-md-6">
+                <section class="frost-panel h-100">
+                    <h3 class="fw-bold mb-3">📝 Executive Summary</h3>
+                    <div id="summaryReport" class="summary-report d-flex flex-column gap-3 text-muted"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Auto-Sync Script for Confidence Bar -->
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const scoreEl = document.getElementById('confidenceScore');
+                const barEl = document.getElementById('confidenceBar');
+
+                if (scoreEl && barEl) {
+                    // Watch for changes made by analysis.js to the confidence score text
+                    const observer = new MutationObserver(() => {
+                        const text = scoreEl.innerText || scoreEl.textContent;
+                        const match = text.match(/(\d+(\.\d+)?)/); // Extract numbers from text (e.g. "41%" -> 41)
+                        if (match) {
+                            const val = Math.min(Math.max(parseFloat(match[0]), 0), 100); // Clamp between 0-100
+                            barEl.style.width = val + '%';
+                        }
+                    });
+                    observer.observe(scoreEl, { childList: true, characterData: true, subtree: true });
+                }
+            });
+        </script>
+
+        <!-- IMAGE GALLERY -->
+        <section class="frost-panel mb-4">
+            <h3 class="fw-bold mb-4">📷 Analysis Gallery</h3>
+            <div class="d-flex gap-3 overflow-auto pb-2" style="scrollbar-width: thin;">
+
+                <div class="inner-glass-card text-center" style="min-width: 220px;">
+                    <img id="galleryRgb" class="img-fluid rounded mb-3 gallery-image" src="" alt="RGB"
+                        style="min-height: 150px; object-fit: cover;">
+                    <strong class="text-white d-block">Natural RGB</strong>
+                </div>
+
+                <div class="inner-glass-card text-center" style="min-width: 220px;">
+                    <img id="galleryNdvi" class="img-fluid rounded mb-3 gallery-image" src="" alt="NDVI"
+                        style="min-height: 150px; object-fit: cover;">
+                    <strong class="text-white d-block">NDVI</strong>
+                </div>
+
+                <div class="inner-glass-card text-center" style="min-width: 220px;">
+                    <img id="galleryNdwi" class="img-fluid rounded mb-3 gallery-image" src="" alt="NDWI"
+                        style="min-height: 150px; object-fit: cover;">
+                    <strong class="text-white d-block">NDWI</strong>
+                </div>
+
+                <div class="inner-glass-card text-center" style="min-width: 220px;">
+                    <img id="galleryEvi" class="img-fluid rounded mb-3 gallery-image" src="" alt="EVI"
+                        style="min-height: 150px; object-fit: cover;">
+                    <strong class="text-white d-block">EVI</strong>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ACTIONS ROW -->
+        <section class="frost-panel mb-4 text-center">
+            <h4 class="fw-bold mb-4">Export Analysis Data</h4>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <button class="btn-slide slide-emerald border-0" id="rerunAnalysis"><span>🛰 Analyze
+                        Again</span></button>
+                <button class="btn-slide slide-blue border-0" id="downloadReport"><span>📄 Export PDF</span></button>
+                <button class="btn-slide slide-blue border-0" id="downloadGeoJSON"
+                    style="background: rgba(255,255,255,0.08) !important;"><span>🌍 GeoJSON</span></button>
+                <button class="btn-slide slide-blue border-0" id="downloadCSV"
+                    style="background: rgba(255,255,255,0.08) !important;"><span>📊 CSV</span></button>
+            </div>
+            <p class="text-muted mt-4 mb-0" style="font-size: 0.85rem;">Generated by TerraMind AI • <strong
+                    id="analysisTimestamp">--</strong></p>
+        </section>
+
+    </main>
+
+    <!-- MODALS -->
+    <!-- Info Modals (RGB, NDVI, NDWI, EVI, SAVI, NDMI, Advisor, Trend) -->
+    <div class="modal fade" id="rgbInfo" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Natural RGB</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">Natural RGB imagery combines the red, green and blue bands. Useful for
+                    identifying roads, water, bare soil.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="ndviInfo" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>NDVI</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">NDVI measures vegetation greenness and vigor.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="ndviModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>NDVI</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">Measures vegetation greenness and vigor. Healthy crops > 0.6.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="ndwiModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>NDWI</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">Indicates water content in vegetation.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="eviModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>EVI</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">Enhanced Vegetation Index improves monitoring in dense canopies.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="saviModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>SAVI</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">Reduces soil brightness influence.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="ndmiModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>NDMI</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">Estimates vegetation moisture content.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="advisorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>🤖 AI Agronomist</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">TerraMind combines vegetation indices, weather forecasts and satellite
+                    observations to generate practical recommendations.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="trendModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>NDVI Trend</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">The NDVI trend compares vegetation health over multiple analyses.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Global Click Spark Engine -->
+    <script>
+        document.addEventListener('click', function (e) {
+            const sparkCount = 8, sparkSize = 6, sparkRadius = 30, duration = 400;
+            for (let i = 0; i < sparkCount; i++) {
+                const spark = document.createElement('div');
+                spark.classList.add('click-spark');
+                document.body.appendChild(spark);
+                const angle = (i * 2 * Math.PI) / sparkCount;
+                const tx = Math.cos(angle) * sparkRadius, ty = Math.sin(angle) * sparkRadius;
+                spark.style.left = `${e.clientX}px`; spark.style.top = `${e.clientY}px`;
+                spark.style.width = `${sparkSize}px`; spark.style.height = `${sparkSize}px`;
+                spark.style.transition = `transform ${duration}ms ease-out, opacity ${duration}ms ease-out`;
+                requestAnimationFrame(() => {
+                    spark.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`;
+                    spark.style.opacity = '0';
+                });
+                setTimeout(() => spark.remove(), duration);
+            }
+        });
+
+        // GSAP Menu & Spotlight
+        document.addEventListener("DOMContentLoaded", () => {
+            const menuToggleBtn = document.getElementById("menuToggleBtn"), menuIcon = document.getElementById("menuIcon"), menuOverlay = document.getElementById("staggeredMenuOverlay");
+            let isMenuOpen = false;
+            const staggeredMenuTl = gsap.timeline({ paused: true });
+            staggeredMenuTl.to(menuOverlay, { display: "flex", opacity: 1, duration: 0.3, ease: "power2.inOut" }).to(".staggered-link", { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, ease: "power3.out" }, "-=0.1");
+            menuToggleBtn.addEventListener("click", () => {
+                isMenuOpen ? (staggeredMenuTl.reverse(), document.body.style.overflow = "auto", menuIcon.classList.replace("bi-x-lg", "bi-list")) : (staggeredMenuTl.play(), document.body.style.overflow = "hidden", menuIcon.classList.replace("bi-list", "bi-x-lg"));
+                isMenuOpen = !isMenuOpen;
+            });
+            document.querySelectorAll('.card-spotlight').forEach(card => card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+            }));
+
+            // Geolocation Pill
+            const topLocationEl = document.getElementById("currentLocation");
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+                        const data = await res.json();
+                        const address = data.address || {};
+                        const city = address.city || address.town || address.village || address.county || "Current Location";
+                        if (topLocationEl) topLocationEl.textContent = city;
+                    } catch (e) {
+                        console.error("Geocoding failed", e);
+                    }
+                }, () => {
+                    if (topLocationEl) topLocationEl.textContent = "Howrah";
+                });
+            }
+
+            // Logout Action
+            const menuLogoutBtn = document.getElementById("menuLogoutBtn");
+            if (menuLogoutBtn) {
+                menuLogoutBtn.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    try {
+                        const res = await fetch("/api/logout", { method: "POST" });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.location.href = "/login";
+                        }
+                    } catch (err) {
+                        console.error("Logout error", err);
+                        window.location.href = "/login";
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- PDF Export Script Engine -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const exportBtn = document.getElementById('exportPdf');
+            const downloadReportBtn = document.getElementById('downloadReport');
+
+            function triggerPdfExport() {
+                // Target the main workspace content
+                const element = document.querySelector('.content');
+                
+                if (!element) {
+                    alert("Analysis content not found for export.");
+                    return;
+                }
+
+                // PDF Options
+                const opt = {
+                    margin:       10,
+                    filename:     'TerraMind-Satellite-Analysis.pdf',
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true, logging: false },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                // Optional: Provide visual feedback that it's loading
+                const originalText = exportBtn ? exportBtn.innerHTML : '';
+                if (exportBtn) exportBtn.innerHTML = '<span><i class="bi bi-hourglass-split mr-2"></i> Generating PDF...</span>';
+
+                // Generate and save PDF using html2pdf.js
+                html2pdf().from(element).set(opt).save().then(() => {
+                    if (exportBtn) exportBtn.innerHTML = originalText;
+                }).catch(err => {
+                    console.error("PDF Export Error:", err);
+                    if (exportBtn) exportBtn.innerHTML = originalText;
+                    alert("Failed to generate PDF. Check console for details.");
+                });
+            }
+
+            // Attach listeners to both export buttons if they exist
+            if (exportBtn) {
+                exportBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    triggerPdfExport();
+                });
+            }
+
+            if (downloadReportBtn) {
+                downloadReportBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    triggerPdfExport();
+                });
+            }
+        });
+    </script>
+
+    <!-- Satellite Lottie Animation Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const overlay = document.getElementById('analysisLoadingOverlay');
+            const lottieContainer = document.getElementById('satelliteLottieAnim');
+            let satelliteAnim = null;
+
+            function showLoaderWithAnimation() {
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                }
+
+                // Initialize Lottie only when the overlay becomes visible
+                if (lottieContainer && window.lottie && !satelliteAnim) {
+                    satelliteAnim = window.lottie.loadAnimation({
+                        container: lottieContainer,
+                        renderer: 'svg',
+                        loop: true,
+                        autoplay: true,
+                        path: "{{ url_for('static', filename='json/satelite.json') }}"
+                    });
+                } else if (satelliteAnim) {
+                    satelliteAnim.play();
+                }
+            }
+
+            function hideLoaderWithAnimation() {
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+                if (satelliteAnim) {
+                    satelliteAnim.pause();
+                }
+            }
+
+            // Expose globally for analysis.js
+            window.showSatelliteLoader = showLoaderWithAnimation;
+            window.hideSatelliteLoader = hideLoaderWithAnimation;
+
+            // Trigger the loading overlay and initialize Lottie on click
+            const analyzeTriggerBtns = document.querySelectorAll('#openAnalysis, #runAnalysis, .analyze-farm-btn');
+            analyzeTriggerBtns.forEach(btn => {
+                btn.addEventListener('click', showLoaderWithAnimation);
+            });
+        });
+    </script>
+
+    <!-- The existing backend JS file -->
+    <script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
+
+</body>
+
+</html>

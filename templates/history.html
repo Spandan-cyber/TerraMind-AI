@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis History - TerraMind</title>
+
+    <!-- FAVICON LINK -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-terramind.png') }}">
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- GSAP for Menu -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* ==========================================================
+           TERRAMIND FROST UI BASE ENGINE
+        ========================================================== */
+        :root {
+            --tm-emerald: #10b981;
+            --frost-bg: rgba(20, 20, 25, 0.4);
+            --frost-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body, html {
+            background-color: #000000 !important;
+            color: var(--text-main) !important;
+            font-family: 'Poppins', sans-serif !important;
+            margin: 0 !important; padding: 0 !important;
+            overflow-x: hidden !important;
+            min-height: 100vh;
+        }
+
+        /* --- Ambient Background Orbs --- */
+        .ambient-orb-1, .ambient-orb-2 {
+            position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.4; z-index: -1; pointer-events: none;
+            animation: floatOrb 20s ease-in-out infinite alternate;
+        }
+        .ambient-orb-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(16, 185, 129, 0.15); }
+        .ambient-orb-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: rgba(167, 139, 250, 0.1); animation-delay: -10s; } /* Purple tint for history */
+        @keyframes floatOrb { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(10%, 15%) scale(1.2); } }
+
+        /* --- Main Layout --- */
+        .content {
+            margin-left: 0 !important; width: 100% !important; max-width: 100% !important;
+            padding: 120px 5% 50px 5% !important; 
+        }
+
+        /* --- The Fixed, Edge-to-Edge Frosted Navbar --- */
+        .topbar {
+            position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+            width: 100vw !important; height: 80px !important;
+            margin: 0 !important; border-radius: 0 !important; border: none !important;
+            border-bottom: 1px solid var(--frost-border) !important; box-sizing: border-box !important;
+            z-index: 2000 !important; 
+            background: rgba(10, 10, 12, 0.7) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important; -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 30px !important;
+        }
+
+        /* --- Glass Panels --- */
+        .frost-panel {
+            background: var(--frost-bg) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important; -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            border: 1px solid var(--frost-border) !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+            border-radius: 20px !important; color: var(--text-main) !important; transition: all 0.4s ease !important;
+        }
+
+        /* --- Spotlight Effect --- */
+        .card-spotlight { --mouse-x: 50%; --mouse-y: 50%; --spotlight-color: rgba(167, 139, 250, 0.15); }
+        .card-spotlight::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle 250px at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+            opacity: 0; transition: opacity 0.5s ease; pointer-events: none; z-index: 0; border-radius: 20px;
+        }
+        .card-spotlight:hover::before { opacity: 1; }
+        .card-spotlight:hover { border-color: rgba(167, 139, 250, 0.3) !important; transform: translateY(-3px) !important; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important; }
+        .card-spotlight > * { position: relative; z-index: 2; }
+
+        /* --- Sliding Buttons --- */
+        .btn-slide {
+            position: relative; overflow: hidden; z-index: 1; display: inline-flex; align-items: center; justify-content: center;
+            transition: transform 0.2s ease, border-color 0.3s ease !important;
+            background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important; border-radius: 12px !important; font-weight: 600; text-decoration: none; padding: 10px 24px;
+        }
+        .btn-slide span { position: relative; z-index: 2; transition: color 0.3s ease; }
+        .btn-slide::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            transform: translateX(-101%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: inherit;
+        }
+        .btn-slide:hover::after { transform: translateX(0); }
+        .slide-purple::after { background: #a78bfa; }
+        .btn-slide.slide-purple:hover span { color: #000 !important; }
+
+        /* --- Menu Overrides --- */
+        #staggeredMenuOverlay { z-index: 1900 !important; }
+        .staggered-link { transform: translateY(50px); opacity: 0; }
+        
+        /* ==========================================================
+           GLOBAL CLICK SPARK EFFECT
+        ========================================================== */
+        .click-spark {
+            position: fixed;
+            pointer-events: none; /* Ensures sparks don't block clicks */
+            z-index: 9999;
+            border-radius: 50%;
+            background-color: var(--tm-emerald, #10b981);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        /* Custom Scrollbar for Timeline */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--tm-emerald); }
+    </style>
+</head>
+<body>
+
+<!-- Ambient Background Orbs -->
+<div class="ambient-orb-1"></div>
+<div class="ambient-orb-2"></div>
+
+<!-- ===================================================== -->
+<!-- Top Navbar (Fixed & Frosted) -->
+<!-- ===================================================== -->
+<header class="topbar">
+    <div class="d-flex align-items-center gap-3">
+        <button id="menuToggleBtn" class="btn text-white border-0 p-1" style="font-size: 1.8rem; outline: none;">
+            <i id="menuIcon" class="bi bi-list transition-all"></i>
+        </button>
+        <div class="d-none d-sm-block">
+            <h4 class="mb-0" style="color: #fff; font-weight: 700; letter-spacing: 0.5px;">
+                Terra<span style="color: var(--tm-emerald);">Mind</span>
+            </h4>
+        </div>
+    </div>
+
+    <div class="top-right d-flex align-items-center gap-3">
+        <div class="location-pill d-none d-md-flex align-items-center gap-2" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 6px 14px;">
+            <i class="bi bi-geo-alt-fill" style="color: var(--tm-emerald);"></i>
+            <span id="currentLocation" style="font-size: 0.85rem;">Howrah</span>
+        </div>
+        <!-- Profile Chip -->
+        <div class="profile d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.02); padding: 4px 14px 4px 4px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+            
+            <!-- Dynamic Avatar Logic -->
+            <div id="userAvatar" class="avatar" style="display:flex; width: 38px; height: 38px; border-radius: 50%; align-items: center; justify-content: center; background: transparent; padding: 0; overflow: hidden;">
+                
+                {% if session.get('profile_photo') %}
+                    <!-- Shows your uploaded photo if it exists -->
+                    <img src="{{ session.get('profile_photo') }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                {% else %}
+                    <!-- Sleek DiceBear fallback if no photo is uploaded yet -->
+                    <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                {% endif %}
+
+            </div>
+            
+            <!-- Name & Role -->
+            <div class="d-none d-sm-block" style="line-height: 1.2;">
+                <strong id="userName" style="display:block; font-size: 13px; color: #fff;">{{ session.get('full_name') or 'Spandan Das' }}</strong>
+                <small id="userRoleOrPhone" style="display:block; font-size: 10px; color: var(--text-muted);">Premium</small>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ===================================================== -->
+<!-- FULL SCREEN STAGGERED MENU OVERLAY -->
+<!-- ===================================================== -->
+<div id="staggeredMenuOverlay" class="position-fixed inset-0" style="top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(24px); display: none; opacity: 0; flex-direction: column; justify-content: flex-start; padding-left: 15%; padding-top: 120px; overflow-y: auto;">
+    <div class="d-flex flex-column gap-4 text-white" style="font-size: 2.5rem; font-weight: 700;">
+        <a href="/dashboard" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">01</span> Dashboard</a>
+        <a href="/farms" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">02</span> My Farms</a>
+        <a href="/add-farm" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">03</span> Add Farm</a>
+        <a href="/history" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:1;">04</span> Analysis History</a>
+        <a href="/weather" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">05</span> Weather</a>
+        <a href="/advisory" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">06</span> AI Advisories</a>
+        <a href="/profile" class="staggered-link text-white text-decoration-none d-flex align-items-center"><span style="color:var(--tm-emerald); font-size:1.2rem; font-family:monospace; margin-right:20px; opacity:0.6;">07</span> Profile & Settings</a>
+        <a href="#" id="menuLogoutBtn" class="staggered-link text-danger text-decoration-none d-flex align-items-center mt-4" style="font-size: 1.8rem;"><i class="bi bi-box-arrow-right mr-3" style="margin-right:15px;"></i> Logout</a>
+    </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- MAIN CONTENT: ANALYSIS HISTORY -->
+<!-- ===================================================== -->
+<main class="content">
+
+    <!-- Header Section -->
+    <div class="d-flex flex-column mb-5">
+        <h1 style="font-size: 3rem; font-weight: 700; letter-spacing: -1px; color: #fff; margin-bottom: 5px;">Analysis History</h1>
+        <p style="color: var(--text-muted); font-size: 1.1rem; margin: 0;">Every satellite analysis you've run, across all farms.</p>
+    </div>
+
+    <!-- History Timeline Container -->
+    <div class="history-container d-flex flex-column gap-4" style="max-width: 900px;">
+        
+        <!-- JINJA LOGIC: Loop through history records -->
+        {% if history_records %}
+            {% for record in history_records %}
+            <div class="frost-panel card-spotlight p-4 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between position-relative">
+                
+                <!-- Left Side: Date Box & Info -->
+                <div class="d-flex align-items-center gap-4 mb-4 mb-md-0">
+                    <!-- Calendar Date Block -->
+                    <div class="date-box text-center px-3 py-2" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; min-width: 80px;">
+                        {% set date_str = record.created_at or record.date or '2026-05-18' %}
+                        <span class="d-block" style="color: #a78bfa; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                            {{ record.month or (date_str[5:7] | default('MAY')) }}
+                        </span>
+                        <strong class="d-block text-white" style="font-size: 1.8rem; line-height: 1.1;">
+                            {{ record.day or (date_str[8:10] | default('18')) }}
+                        </strong>
+                        <span class="d-block text-muted" style="font-size: 0.75rem;">
+                            {{ record.year or (date_str[0:4] | default('2026')) }}
+                        </span>
+                    </div>
+
+                    <!-- Details -->
+                    <div>
+                        <h4 class="text-white mb-2" style="font-size: 1.4rem; font-weight: 600;">{{ record.farm_name or record.name or 'My Farm' }}</h4>
+                        <div class="d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                            <span style="color: var(--text-muted);">{{ (record.created_at or record.date or '')[:10] }} &nbsp;•&nbsp; Quality:</span>
+                            <!-- Dynamic Quality Badge -->
+                            {% set qual = record.quality or record.health or 'Normal' %}
+                            {% if qual in ['Good', 'Healthy', 'Optimal'] %}
+                                <span style="background: rgba(16, 185, 129, 0.15); color: var(--tm-emerald); border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                    {{ qual }}
+                                </span>
+                            {% elif qual in ['Moderate', 'Normal', 'Warning'] %}
+                                <span style="background: rgba(250, 204, 21, 0.15); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                    {{ qual }}
+                                </span>
+                            {% else %}
+                                <span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                    {{ qual }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Metrics & Action -->
+                <div class="d-flex align-items-center gap-4">
+                    <div class="text-right">
+                        <span class="d-block text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px; font-weight: 600;">NDVI Score</span>
+                        <strong class="text-white" style="font-size: 2.2rem; line-height: 1;">{{ record.ndvi or record.mean_ndvi or '0.38' }}</strong>
+                    </div>
+                    <a href="{% if record.farm_id %}/analyze/{{ record.farm_id }}{% else %}#{% endif %}" class="btn-slide slide-purple ms-3" style="min-width: 130px;">
+                        <span>View <i class="bi bi-arrow-right ms-1"></i></span>
+                    </a>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        {% else %}
+            
+            <!-- FALLBACK HARDCODED CARD -->
+            <div class="frost-panel card-spotlight p-4 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between position-relative">
+                
+                <!-- Left Side -->
+                <div class="d-flex align-items-center gap-4 mb-4 mb-md-0">
+                    <div class="date-box text-center px-3 py-2" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; min-width: 80px;">
+                        <span class="d-block" style="color: #a78bfa; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">MAY</span>
+                        <strong class="d-block text-white" style="font-size: 1.8rem; line-height: 1.1;">18</strong>
+                        <span class="d-block text-muted" style="font-size: 0.75rem;">2026</span>
+                    </div>
+                    <div>
+                        <h4 class="text-white mb-2" style="font-size: 1.4rem; font-weight: 600;">My Farm</h4>
+                        <div class="d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                            <span style="color: var(--text-muted);">2026-05-18 &nbsp;•&nbsp; Quality:</span>
+                            <span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                Poor
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side -->
+                <div class="d-flex align-items-center gap-4">
+                    <div class="text-right">
+                        <span class="d-block text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px; font-weight: 600;">NDVI</span>
+                        <strong class="text-white" style="font-size: 2.2rem; line-height: 1;">0.38</strong>
+                    </div>
+                    <a href="#" class="btn-slide slide-purple ms-3" style="min-width: 130px;">
+                        <span>View <i class="bi bi-arrow-right ms-1"></i></span>
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- Empty State Note -->
+            <div class="text-center mt-5">
+                <i class="bi bi-clock-history" style="font-size: 3rem; color: rgba(255,255,255,0.1);"></i>
+                <p style="color: var(--text-muted); margin-top: 15px;">No more historical records found.</p>
+            </div>
+            
+        {% endif %}
+
+    </div>
+</main>
+
+<!-- Scripts -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // ==========================================
+        // 1. GSAP STAGGERED MENU LOGIC
+        // ==========================================
+        const menuToggleBtn = document.getElementById("menuToggleBtn");
+        const menuIcon = document.getElementById("menuIcon");
+        const menuOverlay = document.getElementById("staggeredMenuOverlay");
+        let isMenuOpen = false;
+
+        const staggeredMenuTl = gsap.timeline({ paused: true });
+        
+        staggeredMenuTl.to(menuOverlay, { display: "flex", opacity: 1, duration: 0.3, ease: "power2.inOut" });
+        staggeredMenuTl.to(".staggered-link", { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, ease: "power3.out" }, "-=0.1");
+
+        menuToggleBtn.addEventListener("click", () => {
+            if (!isMenuOpen) {
+                staggeredMenuTl.play();
+                document.body.style.overflow = "hidden";
+                menuIcon.classList.replace("bi-list", "bi-x-lg");
+            } else {
+                staggeredMenuTl.reverse();
+                document.body.style.overflow = "auto";
+                menuIcon.classList.replace("bi-x-lg", "bi-list");
+            }
+            isMenuOpen = !isMenuOpen;
+        });
+
+        // ==========================================
+        // 2. SPOTLIGHT CARD EFFECT
+        // ==========================================
+        const spotlightCards = document.querySelectorAll('.card-spotlight');
+        spotlightCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // ==========================================
+        // 3. AUTO LOCATION DETECT (Top Pill)
+        // ==========================================
+        const topLocationEl = document.getElementById("currentLocation");
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+                    const data = await res.json();
+                    const address = data.address || {};
+                    const city = address.city || address.town || address.village || address.county || "Current Location";
+                    if (topLocationEl) topLocationEl.textContent = city;
+                } catch (e) {
+                    console.error("Geocoding failed", e);
+                }
+            }, () => {
+                if (topLocationEl) topLocationEl.textContent = "Howrah";
+            });
+        }
+
+        // ==========================================
+        // 4. LOGOUT ACTION
+        // ==========================================
+        const menuLogoutBtn = document.getElementById("menuLogoutBtn");
+        if (menuLogoutBtn) {
+            menuLogoutBtn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch("/api/logout", { method: "POST" });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = "/login";
+                    }
+                } catch (err) {
+                    console.error("Logout error", err);
+                    window.location.href = "/login";
+                }
+            });
+        }
+    });
+
+    // ==========================================
+    // GLOBAL CLICK SPARK ENGINE
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        // Spark Configuration (Matching your React props)
+        const sparkCount = 8;
+        const sparkSize = 6;     // Base size in pixels
+        const sparkRadius = 30;  // How far they travel
+        const duration = 400;    // Milliseconds
+
+        for (let i = 0; i < sparkCount; i++) {
+            const spark = document.createElement('div');
+            spark.classList.add('click-spark');
+            document.body.appendChild(spark);
+
+            // Calculate radial explosion angle
+            const angle = (i * 2 * Math.PI) / sparkCount;
+            
+            // X and Y travel distances
+            const tx = Math.cos(angle) * sparkRadius;
+            const ty = Math.sin(angle) * sparkRadius;
+
+            // Set exact click position
+            spark.style.left = `${e.clientX}px`;
+            spark.style.top = `${e.clientY}px`;
+            spark.style.width = `${sparkSize}px`;
+            spark.style.height = `${sparkSize}px`;
+            
+            // Set the transition duration
+            spark.style.transition = `transform ${duration}ms ease-out, opacity ${duration}ms ease-out`;
+
+            // Trigger the explosion animation on the very next frame
+            requestAnimationFrame(() => {
+                spark.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`;
+                spark.style.opacity = '0';
+            });
+
+            // Clean up the DOM element after the animation finishes
+            setTimeout(() => {
+                spark.remove();
+            }, duration);
+        }
+    });
+</script>
+
+</body>
+</html>

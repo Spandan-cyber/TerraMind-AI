@@ -1,0 +1,474 @@
+/* ===========================================================
+   TerraMind - Add Farm
+=========================================================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Poppins",sans-serif;
+}
+
+body{
+
+    background:#f4f8f5;
+
+    color:#1b4332;
+
+}
+
+/* =====================================
+   Layout
+===================================== */
+
+.container-fluid{
+
+    padding:0;
+
+}
+
+.row{
+
+    min-height:100vh;
+
+}
+
+/* =====================================
+   Sidebar
+===================================== */
+
+.sidebar{
+
+    background:#ffffff;
+
+    padding:35px;
+
+    border-right:1px solid #e7ece8;
+
+    overflow-y:auto;
+
+}
+
+.sidebar h2{
+
+    margin-top:20px;
+
+    font-weight:700;
+
+    color:#2e7d32;
+
+}
+
+.sidebar p{
+
+    color:#666;
+
+    margin-bottom:25px;
+
+}
+
+.back-btn{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    text-decoration:none;
+
+    color:#2e7d32;
+
+    font-weight:600;
+
+}
+
+.back-btn:hover{
+
+    color:#1b5e20;
+
+}
+
+/* =====================================
+   Forms
+===================================== */
+
+label{
+
+    font-weight:600;
+
+    margin-bottom:8px;
+
+}
+
+.form-control,
+.form-select{
+
+    border-radius:12px;
+
+    border:1px solid #dce3dd;
+
+    padding:12px 15px;
+
+    transition:.25s;
+
+}
+
+.form-control:focus,
+.form-select:focus{
+
+    border-color:#2e7d32;
+
+    box-shadow:0 0 0 .15rem rgba(46,125,50,.15);
+
+}
+
+/* =====================================
+   Buttons
+===================================== */
+
+.btn{
+
+    border-radius:12px;
+
+    font-weight:600;
+
+    padding:12px;
+
+}
+
+.btn-success{
+
+    background:#2e7d32;
+
+    border:none;
+
+}
+
+.btn-success:hover{
+
+    background:#256b2a;
+
+}
+
+.btn-outline-secondary{
+
+    border-radius:12px;
+
+}
+
+/* =====================================
+   Map Side
+===================================== */
+
+.col-lg-8{
+
+    background:#eef5ef;
+
+    padding:35px;
+
+}
+
+/* =====================================
+   Header Card
+===================================== */
+
+.top-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    margin-bottom:20px;
+
+    box-shadow:0 10px 30px rgba(0,0,0,.05);
+
+}
+
+.top-card h3{
+
+    font-weight:700;
+
+    margin-bottom:10px;
+
+}
+
+/* =====================================
+   Map
+===================================== */
+
+#map{
+
+    width:100%;
+
+    height:600px;
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+    box-shadow:0 15px 35px rgba(0,0,0,.08);
+
+    border:3px solid white;
+
+}
+
+/* =====================================
+   Info Cards
+===================================== */
+
+.info-card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    text-align:center;
+
+    margin-top:20px;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.05);
+
+    transition:.25s;
+
+}
+
+.info-card:hover{
+
+    transform:translateY(-4px);
+
+}
+
+.info-card h6{
+
+    color:#777;
+
+    margin-bottom:12px;
+
+}
+
+.info-card h3{
+
+    color:#2e7d32;
+
+    font-weight:700;
+
+}
+
+/* =====================================
+   Search
+===================================== */
+
+.input-group{
+
+    border-radius:12px;
+
+    overflow:hidden;
+
+}
+
+/* =====================================
+   Scrollbar
+===================================== */
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#c8d8cb;
+
+    border-radius:20px;
+
+}
+
+/* =====================================
+   Leaflet
+===================================== */
+
+.leaflet-container{
+
+    border-radius:20px;
+
+}
+
+.leaflet-control-zoom{
+
+    border:none!important;
+
+}
+
+.leaflet-bar{
+
+    box-shadow:0 6px 18px rgba(0,0,0,.15);
+
+}
+
+/* =====================================
+   Draw Toolbar
+===================================== */
+
+.leaflet-draw-toolbar a{
+
+    background:white;
+
+}
+
+/* =====================================
+   Animation
+===================================== */
+
+.sidebar,
+.top-card,
+.info-card{
+
+    animation:fadeUp .5s ease;
+
+}
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(20px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/* =====================================
+   Mobile
+===================================== */
+
+@media(max-width:992px){
+
+.sidebar{
+
+    min-height:auto;
+
+    border-right:none;
+
+    border-bottom:1px solid #ddd;
+
+}
+
+.col-lg-8{
+
+    padding:20px;
+
+}
+
+#map{
+
+    height:450px;
+
+}
+
+.info-card{
+
+    margin-bottom:15px;
+
+}
+
+}
+
+@media(max-width:576px){
+
+.sidebar{
+
+    padding:20px;
+
+}
+
+.top-card{
+
+    padding:18px;
+
+}
+
+#map{
+
+    height:350px;
+
+}
+
+.btn{
+
+    padding:10px;
+
+}
+
+}
+
+/* ==========================================
+   Leaflet Draw Toolbar
+========================================== */
+
+.leaflet-draw{
+    margin-top:16px;
+    margin-left:12px;
+}
+
+.leaflet-draw-toolbar{
+    border:none!important;
+    box-shadow:none!important;
+    background:transparent!important;
+}
+
+.leaflet-draw-toolbar a{
+
+    width:42px;
+    height:42px;
+
+    margin-bottom:10px;
+
+    border-radius:12px!important;
+
+    background-color:#2E7D32!important;
+
+    background-image:none!important;
+
+    border:none!important;
+
+    box-shadow:0 4px 10px rgba(0,0,0,.18);
+
+    transition:.2s;
+
+    display:flex!important;
+    align-items:center;
+    justify-content:center;
+
+    font-size:18px;
+}
+
+.leaflet-draw-toolbar a:hover{
+
+    background-color:#43A047!important;
+
+    transform:translateY(-2px);
+}
+
+.leaflet-draw-draw-polygon::after{ content:"⬠"; color:#fff; }
+.leaflet-draw-edit-edit::after{ content:"✏️"; }
+.leaflet-draw-edit-remove::after{ content:"🗑"; }
+
+.leaflet-draw-toolbar a:last-child{
+    margin-bottom:0;
+}

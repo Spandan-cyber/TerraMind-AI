@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraMind Dashboard</title>
+
+    <!-- FAVICON LINK -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-terramind.png') }}">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Original CSS Links -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analysis.css') }}">
+
+    <style>
+        /* ==========================================================
+           TERRAMIND FROST UI (GLASSMORPHISM) ENGINE
+        ========================================================== */
+
+        :root {
+            --tm-emerald: #10b981;
+            --tm-emerald-glow: rgba(16, 185, 129, 0.3);
+            --frost-bg: rgba(20, 20, 25, 0.4);
+            /* Extremely sheer dark glass */
+            --frost-border: rgba(255, 255, 255, 0.08);
+            /* Barely-there edge reflection */
+            --frost-highlight: rgba(255, 255, 255, 0.15);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body,
+        html {
+            background-color: #000000 !important;
+            color: var(--text-main) !important;
+            font-family: 'Poppins', sans-serif !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+        }
+
+        /* 1. THE AMBIENT BACKGROUND ORBS (Makes the glass look real) */
+        .ambient-orb-1,
+        .ambient-orb-2 {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.5;
+            z-index: -1;
+            pointer-events: none;
+            animation: floatOrb 20s ease-in-out infinite alternate;
+        }
+
+        .ambient-orb-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: rgba(16, 185, 129, 0.15);
+            /* Emerald Orb */
+        }
+
+        .ambient-orb-2 {
+            bottom: -20%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: rgba(56, 189, 248, 0.1);
+            /* Cyan Orb */
+            animation-delay: -10s;
+        }
+
+        @keyframes floatOrb {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(10%, 15%) scale(1.2);
+            }
+        }
+
+        /* 2. THE FROSTED GLASS UTILITY CLASS */
+        .frost-panel {
+            background: var(--frost-bg) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            border: 1px solid var(--frost-border) !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+            border-radius: 24px !important;
+            color: var(--text-main) !important;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .frost-panel:hover {
+            border-color: rgba(16, 185, 129, 0.3) !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.1) !important;
+            transform: translateY(-4px) !important;
+        }
+
+        /* Override existing layout backgrounds to be transparent so the glass works */
+        .dashboard-section,
+        .stats-grid,
+        .farm-grid,
+        .quick-grid,
+        .indices-grid,
+        .summary-grid,
+        .image-grid,
+        .analysis-layout,
+        .content {
+            background: transparent !important;
+        }
+
+        /* --- Sidebar & Topbar --- */
+        .sidebar {
+            background: rgba(10, 10, 12, 0.6) !important;
+            backdrop-filter: blur(30px) !important;
+            -webkit-backdrop-filter: blur(30px) !important;
+            border-right: 1px solid var(--frost-border) !important;
+        }
+
+        .sidebar a {
+            color: var(--text-muted) !important;
+            border-radius: 12px !important;
+            transition: 0.3s;
+            margin: 4px 12px !important;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: var(--tm-emerald) !important;
+            box-shadow: inset 3px 0 0 var(--tm-emerald);
+        }
+
+        .topbar {
+            background: rgba(5, 5, 5, 0.5) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid var(--frost-border) !important;
+        }
+
+        /* --- Apply Frost UI to specific dashboard cards --- */
+        .stat-card,
+        .quick-card,
+        .index-card,
+        .summary-card,
+        .glass-panel,
+        .image-card,
+        .farm-placeholder,
+        .loading-box,
+        .weather-hero,
+        .hero {
+            background: var(--frost-bg) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            border: 1px solid var(--frost-border) !important;
+            border-radius: 20px !important;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+            transition: all 0.4s ease !important;
+        }
+
+        .stat-card:hover,
+        .quick-card:hover,
+        .index-card:hover,
+        .summary-card:hover {
+            transform: translateY(-5px) !important;
+            border-color: rgba(16, 185, 129, 0.4) !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.15) !important;
+        }
+
+        /* --- Typography & Highlights --- */
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            letter-spacing: -0.02em;
+        }
+
+        p,
+        small,
+        span {
+            color: var(--text-muted);
+        }
+
+        .section-header p {
+            color: var(--text-muted) !important;
+        }
+
+        .icon,
+        .quick-icon {
+            color: var(--tm-emerald) !important;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
+
+        .hero-tag {
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: var(--tm-emerald) !important;
+            border: 1px solid rgba(16, 185, 129, 0.3) !important;
+            border-radius: 20px !important;
+            padding: 6px 14px !important;
+            backdrop-filter: blur(10px);
+        }
+
+        /* --- Buttons --- */
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: #fff !important;
+            border-radius: 14px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 15px var(--tm-emerald-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+        }
+
+        .btn-outline-primary,
+        .btn-outline-dark,
+        .btn-outline-warning {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid var(--frost-border) !important;
+            color: #fff !important;
+            border-radius: 14px !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .btn-outline-primary:hover,
+        .btn-outline-dark:hover,
+        .btn-outline-warning:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            transform: translateY(-2px);
+        }
+
+        /* --- Progress Bars --- */
+        .progress {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-radius: 8px !important;
+            height: 8px !important;
+            overflow: visible !important;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .progress-bar {
+            border-radius: 8px !important;
+            position: relative;
+        }
+
+        .progress-bar.bg-success {
+            background: linear-gradient(90deg, #059669, #10b981) !important;
+            box-shadow: 0 0 15px var(--tm-emerald) !important;
+        }
+
+        /* --- Custom Slim Emerald Scrollbar --- */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 2px solid #000;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--tm-emerald);
+        }
+
+        /* ==========================================================
+           FROSTED FIXED NAVBAR & FULL-WIDTH LAYOUT
+        ========================================================== */
+
+        /* Hide the old static sidebar */
+        .sidebar {
+            display: none !important;
+        }
+
+        /* Force the main content to take full width and push it down */
+        .analysis-layout {
+            display: block !important;
+        }
+
+        .content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            padding-top: 100px !important;
+            /* 80px navbar + 20px breathing room */
+        }
+
+        /* The Fixed, Edge-to-Edge Frosted Navbar */
+        .topbar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100vw !important;
+            height: 80px !important;
+
+            /* Override original dashboard.css layout */
+            margin: 0 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            border-bottom: 1px solid var(--frost-border) !important;
+            box-sizing: border-box !important;
+
+            z-index: 2000 !important;
+            background: rgba(10, 10, 12, 0.7) !important;
+            backdrop-filter: blur(24px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 0 30px !important;
+            transition: background 0.3s ease;
+        }
+
+        /* Menu overlay sits below the navbar */
+        #staggeredMenuOverlay {
+            z-index: 1900 !important;
+            padding-top: 80px !important;
+        }
+
+        /* Topbar hamburger button */
+        #menuToggleBtn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        /* Base styling for the new menu links */
+        .staggered-link {
+            transform: translateY(50px);
+            opacity: 0;
+            text-decoration: none;
+        }
+
+        /* Staggered overlay — compact sizing */
+        #staggeredMenuOverlay .menu-items-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        #staggeredMenuOverlay .menu-items-wrap a {
+            font-size: clamp(1.75rem, 4vw, 3rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        #staggeredMenuOverlay .menu-items-wrap a:hover {
+            color: #34d399;
+        }
+
+        #staggeredMenuOverlay .menu-num {
+            font-size: clamp(0.65rem, 1vw, 0.9rem);
+            font-family: monospace;
+            margin-right: 1.25rem;
+            opacity: 0.5;
+            transition: opacity 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        #staggeredMenuOverlay .menu-items-wrap a:hover .menu-num {
+            opacity: 1;
+        }
+
+        /* ==========================================================
+           UNBREAKABLE L-SHAPE WEATHER WIDGET 
+        ========================================================== */
+
+        .custom-weather-widget {
+            position: relative;
+            width: 300px;
+            height: 322px;
+            /* Maintains the SVG ratio */
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
+        }
+
+        .weather-shape-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .weather-content-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+        }
+
+        /* 🛡️ SHIELD: Forces Bootstrap to stop adding white boxes */
+        .weather-content-overlay div,
+        .weather-content-overlay span,
+        .weather-content-overlay h1,
+        .weather-content-overlay h5,
+        .weather-content-overlay p {
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* --- Sun Positioned Top-Right --- */
+        .weather-icon-wrapper {
+            position: absolute;
+            top: 45px;
+            right: 45px;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        /* Beautiful Glowing Sun */
+        .sun-ambient-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #F59E0B !important;
+            border-radius: 50% !important;
+            filter: blur(25px);
+            opacity: 0.6;
+            z-index: 0;
+        }
+
+        .css-sun {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .sun-center {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #FDE047, #F59E0B) !important;
+            border-radius: 50% !important;
+            z-index: 2;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.8) !important;
+        }
+
+        .sun-ray {
+            position: absolute;
+            width: 4px;
+            height: 48px;
+            background: linear-gradient(135deg, #FDE047, #F59E0B) !important;
+            border-radius: 4px !important;
+            z-index: 1;
+        }
+
+        .r1 {
+            transform: rotate(0deg);
+        }
+
+        .r2 {
+            transform: rotate(45deg);
+        }
+
+        .r3 {
+            transform: rotate(90deg);
+        }
+
+        .r4 {
+            transform: rotate(135deg);
+        }
+
+        /* --- Text Positioned Bottom-Left (Adjusted Up and Left) --- */
+        .weather-details {
+            position: absolute;
+            /* bottom: 55px !important;
+            /* Pushed UP from 40px */
+            /* left: 47px !important;
+            Pulled LEFT from 80px */
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 2px !important;
+            z-index: 5;
+            max-width: 180px;
+        }
+
+        .weather-temp-row {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 4px !important;
+        }
+
+        .weather-temp {
+            font-size: 2.2rem !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            color: #ffffff !important;
+            letter-spacing: -1px !important;
+        }
+
+        .weather-unit {
+            font-size: 1rem !important;
+            font-weight: 500 !important;
+            color: #94a3b8 !important;
+            margin-top: 2px !important;
+        }
+
+        .weather-condition {
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            color: #ffffff !important;
+            margin-top: 4px !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .weather-location {
+            font-size: 0.75rem !important;
+            color: #94a3b8 !important;
+            line-height: 1.3 !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        /* --- Animated Dark Mode Weather Cards --- */
+        .farm-weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .farm-weather-card {
+            border-radius: 24px;
+            padding: 24px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            min-height: 150px;
+            backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--frost-border);
+            transition: all 0.4s ease;
+        }
+
+        .farm-weather-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .farm-weather-card.cond-sunny {
+            background: linear-gradient(135deg, rgba(247, 151, 30, 0.2), rgba(255, 210, 0, 0.05)) !important;
+            border-color: rgba(247, 151, 30, 0.3) !important;
+        }
+
+        .farm-weather-card.cond-cloudy {
+            background: linear-gradient(135deg, rgba(117, 127, 154, 0.2), rgba(215, 221, 232, 0.05)) !important;
+            border-color: rgba(117, 127, 154, 0.3) !important;
+        }
+
+        .farm-weather-card.cond-rainy {
+            background: linear-gradient(135deg, rgba(57, 106, 252, 0.2), rgba(41, 72, 255, 0.05)) !important;
+            border-color: rgba(57, 106, 252, 0.3) !important;
+        }
+
+        .farm-weather-card.cond-storm {
+            background: linear-gradient(135deg, rgba(35, 37, 38, 0.6), rgba(65, 67, 69, 0.2)) !important;
+            border-color: rgba(100, 100, 100, 0.3) !important;
+        }
+
+        .farm-weather-card.cond-snow {
+            background: linear-gradient(135deg, rgba(131, 164, 212, 0.2), rgba(182, 251, 255, 0.05)) !important;
+            border-color: rgba(131, 164, 212, 0.3) !important;
+            color: #fff !important;
+        }
+
+        .farm-weather-card.cond-unknown {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05)) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+
+        .farm-weather-icon {
+            font-size: 40px;
+            display: inline-block;
+            animation: floatIcon 3s ease-in-out infinite;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+        }
+
+        @keyframes floatIcon {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .farm-weather-temp {
+            font-size: 38px;
+            font-weight: 700;
+            margin: 6px 0 2px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .farm-weather-meta {
+            font-size: 13px;
+            opacity: 0.9;
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* --- Modals & Chatbot --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-card {
+            background: rgba(15, 15, 20, 0.8) !important;
+            backdrop-filter: blur(30px) saturate(200%) !important;
+            border: 1px solid var(--frost-border) !important;
+            border-radius: 24px;
+            max-width: 640px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 32px;
+            position: relative;
+            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        @keyframes modalPop {
+            from {
+                transform: scale(0.95) translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        #chatbotToggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: #fff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 1500;
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.3) !important;
+            animation: chatPulse 3s ease-in-out infinite;
+            transition: 0.3s;
+        }
+
+        #chatbotToggle:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes chatPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 12px 40px rgba(16, 185, 129, 0.7);
+            }
+        }
+
+        #chatbotPanel {
+            position: fixed;
+            bottom: 110px;
+            right: 30px;
+            width: 360px;
+            max-height: 500px;
+            background: rgba(15, 15, 20, 0.8) !important;
+            backdrop-filter: blur(30px) saturate(200%) !important;
+            border: 1px solid var(--frost-border) !important;
+            border-radius: 24px;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1500;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        #chatbotPanel.show {
+            display: flex;
+            animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #chatbotHeader {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border-bottom: 1px solid var(--frost-border) !important;
+            color: var(--tm-emerald) !important;
+            padding: 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chatbotHeader button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #chatbotHeader button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #chatbotMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .chat-bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 85%;
+            line-height: 1.5;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-bubble.user {
+            background: var(--tm-emerald) !important;
+            color: #000 !important;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            font-weight: 500;
+        }
+
+        .chat-bubble.bot {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff !important;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        #chatbotInputRow {
+            display: flex;
+            background: transparent !important;
+            border-top: 1px solid var(--frost-border) !important;
+            padding: 16px;
+            gap: 12px;
+        }
+
+        #chatbotInput {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            border-radius: 20px;
+            padding: 12px 18px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        #chatbotInput:focus {
+            border-color: var(--tm-emerald) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        #chatbotSend {
+            background: var(--tm-emerald) !important;
+            color: #000 !important;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #chatbotSend:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--tm-emerald-glow);
+        }
+
+        /* --- Feedback Section --- */
+        #feedbackMessage {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid var(--frost-border) !important;
+            color: white !important;
+            border-radius: 16px;
+            padding: 16px;
+            transition: 0.3s;
+        }
+
+        #feedbackMessage:focus {
+            border-color: var(--tm-emerald) !important;
+            outline: none;
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .feedback-stars {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            gap: 8px;
+            font-size: 32px;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+
+        .feedback-stars span {
+            color: rgba(255, 255, 255, 0.1);
+            transition: 0.2s;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .feedback-stars span.selected,
+        .feedback-stars span:hover,
+        .feedback-stars span:hover~span {
+            color: #f59e0b !important;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+            transform: scale(1.1);
+        }
+
+        /* ==========================================================
+           TYPING CURSOR & SPECULAR BUTTON STYLES
+        ========================================================== */
+
+        .typing-cursor {
+            color: var(--tm-emerald);
+            font-weight: 300;
+            margin-left: 2px;
+            animation: blinkCursor 0.8s infinite;
+        }
+
+        @keyframes blinkCursor {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .specular-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            color: #ffffff;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.15s ease;
+            border-radius: 18px;
+
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+
+            /* 🛡️ NEW: Keeps the sliding color from bleeding outside the corners */
+            overflow: hidden;
+        }
+
+        .specular-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ==========================================================
+           THE SLIDE ANIMATION ENGINE
+        ========================================================== */
+
+        .specular-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            /* Sits perfectly behind the text */
+            transform: translateX(-101%);
+            /* Hides the color just off the left edge */
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 18px;
+        }
+
+        /* Trigger the slide on hover */
+        .specular-btn:hover::after {
+            transform: translateX(0);
+        }
+
+        /* The Slide Colors */
+        .slide-emerald::after {
+            background: var(--tm-emerald);
+        }
+
+        .slide-light::after {
+            background: #f8fafc;
+        }
+
+        /* Ensure the text stays on top and smoothly changes to black for readability */
+        .specular-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .specular-btn:hover .specular-content {
+            color: #000000 !important;
+        }
+
+        .specular-fx {
+            position: absolute;
+            inset: -20px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .specular-fx canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ==========================================================
+           SPOTLIGHT HOVER EFFECT
+        ========================================================== */
+
+        .card-spotlight {
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+            --spotlight-color: rgba(255, 255, 255, 0.05);
+            /* Default fallback */
+        }
+
+        .card-spotlight::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle 150px at var(--mouse-x) var(--mouse-y),
+                    var(--spotlight-color),
+                    transparent 80%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card-spotlight:hover::before,
+        .card-spotlight:focus-within::before {
+            opacity: 1;
+        }
+
+        /* Ensure the text and icons stay above the glowing spotlight */
+        .card-spotlight>* {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Farm Grid Layout */
+        .farm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            width: 100%;
+        }
+
+        /* ==========================================================
+           QUICK ACTIONS: BORDER REMOVAL & SLIDING BUTTONS
+        ========================================================== */
+
+        /* Remove the rogue white border around the Quick Actions section */
+        section.dashboard-section {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+
+        /* Base class for all sliding buttons */
+        .btn-slide {
+            position: relative;
+            overflow: hidden;
+            /* Keeps color inside the rounded corners */
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, border-color 0.3s ease !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            border-radius: 14px !important;
+            font-weight: 600;
+        }
+
+        /* Ensure the text sits ABOVE the sliding background */
+        .btn-slide span {
+            position: relative;
+            z-index: 2;
+            transition: color 0.3s ease;
+        }
+
+        /* The invisible color block waiting to the left */
+        .btn-slide::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transform: translateX(-101%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: inherit;
+        }
+
+        /* The Hover Triggers */
+        .btn-slide:hover::after {
+            transform: translateX(0);
+        }
+
+        .btn-slide:hover span {
+            color: #000000 !important;
+            /* Text turns black for readability */
+        }
+
+        /* Custom Colors for each Quick Action */
+        .slide-emerald::after {
+            background: var(--tm-emerald);
+        }
+
+        .slide-blue::after {
+            background: #38bdf8;
+        }
+
+        .slide-purple::after {
+            background: #a78bfa;
+        }
+
+        .slide-yellow::after {
+            background: #facc15;
+        }
+
+        .slide-pink::after {
+            background: #f472b6;
+        }
+
+        /* ==========================================================
+           DYNAMIC WEATHER ANIMATIONS
+        ========================================================== */
+        @keyframes floatCloud {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        @keyframes fallRain {
+            0% {
+                transform: translateY(-5px);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(10px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes flashLightning {
+
+            0%,
+            90%,
+            94%,
+            100% {
+                opacity: 0.2;
+            }
+
+            92%,
+            96% {
+                opacity: 1;
+                filter: drop-shadow(0 0 10px #facc15);
+            }
+        }
+
+        @keyframes fallSnow {
+            0% {
+                transform: translateY(-5px) translateX(0);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(5px) translateX(3px);
+            }
+
+            100% {
+                transform: translateY(12px) translateX(-3px);
+                opacity: 0;
+            }
+        }
+
+        .animated-cloud {
+            animation: floatCloud 3s ease-in-out infinite;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        .rain-drop {
+            animation: fallRain 1.2s linear infinite;
+        }
+
+        .lightning-bolt {
+            animation: flashLightning 4s infinite;
+        }
+
+        .snow-flake {
+            animation: fallSnow 2s linear infinite;
+        }
+
+        /* ==========================================================
+           FARMER GRAPHIC POSITIONING & ANIMATION
+        ========================================================== */
+        .weather-farmer-graphic {
+            position: absolute;
+            top: 140px;
+            /* Directly below the weather icon wrapper */
+            right: 45px;
+            width: 120px;
+            height: 120px;
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0.9;
+            filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+            animation: floatFarmer 4s ease-in-out infinite;
+        }
+
+        @keyframes floatFarmer {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        .weather-farmer-graphic img,
+        .weather-farmer-graphic video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* ==========================================================
+           SWAPPED WEATHER LAYOUT STYLING
+        ========================================================== */
+
+        /* Weather Details — Upper Section */
+        .weather-details-top {
+            position: absolute;
+            top: 52px;
+            left: 125px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            z-index: 5;
+            max-width: 180px;
+        }
+
+        /* Lottie Animation — Bottom-Left Pocket */
+        .weather-lottie-bottom {
+            position: absolute;
+            bottom: 15px;
+            left: 30px;
+            width: 150px;
+            height: 150px;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        /* Weather Icon — Top-Right (compact) */
+        .weather-icon-wrapper-top {
+            position: absolute;
+            top: 35px;
+            right: 35px;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        /* ==========================================================
+           PROFILE CHIP HOVER ANIMATION
+        ========================================================== */
+        .profile-chip {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none !important;
+        }
+
+        .profile-chip:hover {
+            transform: translateY(-2px) scale(1.02);
+            border-color: rgba(16, 185, 129, 0.4) !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+        }
+
+        /* ==========================================================
+           GLOBAL CLICK SPARK EFFECT
+        ========================================================== */
+        .click-spark {
+            position: fixed;
+            pointer-events: none;
+            /* Ensures sparks don't block clicks */
+            z-index: 9999;
+            border-radius: 50%;
+            background-color: var(--tm-emerald, #10b981);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+    </style>
+
+    <!-- Lottie Web Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+</head>
+
+<body>
+
+    <!-- AMBIENT BACKGROUND ORBS FOR GLASSMORPHISM REFRACTION -->
+    <div class="ambient-orb-1"></div>
+    <div class="ambient-orb-2"></div>
+
+    <div class="analysis-layout">
+
+        <!-- ===================================================== -->
+        <!-- Main -->
+        <!-- ===================================================== -->
+        <main class="content">
+
+            <!-- ===================================================== -->
+            <!-- Top Navbar (Fixed & Frosted) -->
+            <!-- ===================================================== -->
+            <header class="topbar">
+
+                <!-- Left Side: Hamburger & Logo -->
+                <div class="d-flex align-items-center gap-3">
+
+                    <!-- Menu Toggle Button -->
+                    <button id="menuToggleBtn" aria-label="Open navigation menu" class="btn text-white border-0 p-1"
+                        style="font-size: 1.8rem; line-height: 1;">
+                        <i id="menuIcon" class="bi bi-list"></i>
+                    </button>
+
+                    <!-- TerraMind Logo -->
+                    <div class="d-none d-sm-block">
+                        <h4 class="mb-0" style="color: #fff; font-weight: 700; letter-spacing: 0.5px;">
+                            Terra<span style="color: var(--tm-emerald);">Mind</span>
+                        </h4>
+                    </div>
+                </div>
+
+                <!-- Right Side: Location, Notifications, Profile -->
+                <div class="top-right d-flex align-items-center gap-3">
+
+                    <!-- Location Pill (hidden on small screens) -->
+                    <div class="location-pill d-none d-md-flex align-items-center gap-2"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 6px 14px;">
+                        <i class="bi bi-geo-alt-fill" style="color: var(--tm-emerald);"></i>
+                        <span id="currentLocation" style="font-size: 0.85rem;">Loading location...</span>
+                    </div>
+
+                    <!-- Profile Chip (Linked to Profile Page) -->
+                    <a href="/profile" class="profile profile-chip d-flex align-items-center gap-2"
+                        style="background: rgba(255,255,255,0.02); padding: 4px 14px 4px 4px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                        <div id="userAvatar" class="avatar"
+                            style="display:flex; width: 38px; height: 38px; border-radius: 50%; align-items: center; justify-content: center; background: transparent; padding: 0; overflow: hidden;">
+                            {% if session.get('profile_photo') %}
+                            <img src="{{ session.get('profile_photo') }}" alt="Profile"
+                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            {% else %}
+                            <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857"
+                                alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            {% endif %}
+                        </div>
+
+                        <div class="d-none d-sm-block" style="line-height: 1.2;">
+                            <strong id="userName" style="display:block; font-size: 13px; color: #fff;">{{
+                                session.get('full_name') or 'Spandan Das' }}</strong>
+                            <small id="userRoleOrPhone"
+                                style="display:block; font-size: 10px; color: var(--text-muted);">Premium</small>
+                        </div>
+                    </a>
+
+                </div>
+            </header>
+
+            <!-- ===================================================== -->
+            <!-- FULL SCREEN STAGGERED MENU OVERLAY -->
+            <!-- ===================================================== -->
+            <div id="staggeredMenuOverlay" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.80);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    z-index: 1900;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-left: clamp(8%, 15vw, 20%);
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+    overflow-y: auto;
+    opacity: 0;
+">
+
+                <!-- Numbered Menu Items — my-auto keeps them vertically centred when content is short -->
+                <div class="menu-items-wrap"
+                    style="margin-top: auto; margin-bottom: auto; display: flex; flex-direction: column; gap: 1.5rem;">
+
+                    <a href="/dashboard" class="staggered-link"
+                        style="color:#ffffff; font-size: 2.5rem; text-decoration: none;">
+                        <span class="menu-num" style="color:#10b981; font-size: 1.5rem; margin-right: 1rem;">01</span>
+                        Dashboard
+                    </a>
+
+                    <a href="/farms" class="staggered-link"
+                        style="color:#ffffff; font-size: 2.5rem; text-decoration: none;">
+                        <span class="menu-num" style="color:#10b981; font-size: 1.5rem; margin-right: 1rem;">02</span>
+                        My Farms
+                    </a>
+
+                    <a href="/add-farm" class="staggered-link"
+                        style="color:#ffffff; font-size: 2.5rem; text-decoration: none;">
+                        <span class="menu-num" style="color:#10b981; font-size: 1.5rem; margin-right: 1rem;">03</span>
+                        Add Farm
+                    </a>
+
+                    <a href="/history" class="staggered-link"
+                        style="color:#ffffff; font-size: 2.5rem; text-decoration: none;">
+                        <span class="menu-num" style="color:#10b981; font-size: 1.5rem; margin-right: 1rem;">04</span>
+                        Analysis History
+                    </a>
+
+                    <a href="/weather" class="staggered-link"
+                        style="color:#ffffff; font-size: 2.5rem; text-decoration: none;">
+                        <span class="menu-num" style="color:#10b981; font-size: 1.5rem; margin-right: 1rem;">05</span>
+                        Weather
+                    </a>
+
+                    <a href="/advisory" class="staggered-link"
+                        style="color:#ffffff; font-size: 2.5rem; text-decoration: none;">
+                        <span class="menu-num" style="color:#10b981; font-size: 1.5rem; margin-right: 1rem;">06</span>
+                        AI Advisories
+                    </a>
+
+                    <a href="/profile" class="staggered-link"
+                        style="color:#ffffff; font-size: 2.5rem; text-decoration: none;">
+                        <span class="menu-num" style="color:#10b981; font-size: 1.5rem; margin-right: 1rem;">07</span>
+                        Profile &amp; Settings
+                    </a>
+
+                    <a href="#" id="logoutBtnStaggered" class="staggered-link"
+                        style="color:#f87171; font-size: 2.5rem; margin-top: 1.25rem; text-decoration: none;">
+                        <span class="menu-num"
+                            style="color:rgba(248,113,113,0.6); font-size: 1.5rem; margin-right: 1rem;">--</span>
+                        <i class="bi bi-box-arrow-right" style="margin-right: 0.5rem;"></i> Logout
+                    </a>
+
+                </div>
+
+                <!-- Bottom social links -->
+                <div class="staggered-link"
+                    style="margin-top: 3rem; margin-bottom: 3rem; display:flex; gap:1.5rem; color:#64748b; font-size:0.8rem; font-family:monospace; letter-spacing:0.15em; text-transform:uppercase; padding-bottom: 3rem;">
+                    <a href="#" style="color:inherit; text-decoration:none; transition:color 0.2s;"
+                        onmouseover="this.style.color='#34d399'" onmouseout="this.style.color=''">Twitter</a>
+                    <a href="#" style="color:inherit; text-decoration:none; transition:color 0.2s;"
+                        onmouseover="this.style.color='#34d399'" onmouseout="this.style.color=''">GitHub</a>
+                    <a href="#" style="color:inherit; text-decoration:none; transition:color 0.2s;"
+                        onmouseover="this.style.color='#34d399'" onmouseout="this.style.color=''">LinkedIn</a>
+                </div>
+
+            </div>
+
+            <!-- ===================================================== -->
+            <!-- Hero -->
+            <!-- ===================================================== -->
+            <section class="hero mt-4">
+
+                <!-- LEFT SIDE: Welcome Text -->
+                <div class="hero-left">
+                    <span class="hero-tag"><i class="bi bi-radar mr-1"></i> Precision Agriculture</span>
+                    <!-- Typing Effect Target -->
+                    <h1 class="mt-3">
+                        Welcome Back,
+                        <span id="heroUser" style="color: var(--tm-emerald);"></span><span
+                            class="typing-cursor">|</span>
+                        <!-- Hidden span for the JS to read safely -->
+                        <span id="hiddenUserName" style="display: none;">{{ session.get('full_name') or 'Spandan Das'
+                            }}</span>
+                    </h1>
+
+                    <p class="mt-2" style="font-size: 1.1rem;">Monitor your farms, satellite imagery, weather, crop
+                        health, AI advisory, and historical analytics from one dashboard.</p>
+
+                    <!-- WebGL Specular Buttons -->
+                    <div class="hero-buttons mt-4 d-flex gap-3">
+
+                        <!-- Add Farm Button (With Emerald Slide) -->
+                        <button class="specular-btn slide-emerald" id="addFarmButton" data-base-color="#059669"
+                            data-line-color="#34d399">
+                            <span class="specular-fx"></span>
+                            <span class="specular-content"><i class="bi bi-plus-circle mr-2"></i> Add Farm</span>
+                        </button>
+
+                        <!-- Analyze Farm Button (With White Slide) -->
+                        <button class="specular-btn slide-light" id="openAnalysis" data-base-color="#18181b"
+                            data-line-color="#ffffff">
+                            <span class="specular-fx"></span>
+                            <span class="specular-content"><i class="bi bi-globe2 mr-2"></i> Analyze Farm</span>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDE: Custom Shape Weather Box -->
+                <div class="hero-right">
+                    <div class="custom-weather-widget">
+
+                        <!-- Absolute SVG Background -->
+                        <svg class="weather-shape-bg" viewBox="0 0 396 426" preserveAspectRatio="xMidYMid meet"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="weather-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#1f2937" />
+                                    <stop offset="100%" stop-color="#0f172a" />
+                                </linearGradient>
+                            </defs>
+                            <path fill="url(#weather-bg-grad)" stroke="rgba(255,255,255,0.15)" stroke-width="2"
+                                d="M 169.36 49.85 L 169.62 49.75 L 170.06 49.61 L 170.69 49.44 L 171.50 49.22 L 172.50 48.96 L 173.50 48.73 L 174.50 48.54 L 175.50 48.38 L 176.50 48.25 L 177.50 48.15 L 178.50 48.08 L 179.50 48.04 L 180.50 48.02 L 181.50 48.01 L 182.50 48.00 L 183.50 48.00 L 184.50 48.00 L 185.50 48.00 L 186.50 48.00 L 187.50 48.00 L 188.50 48.00 L 189.50 48.00 L 190.50 48.00 L 191.50 48.00 L 192.50 48.00 L 193.50 48.00 L 194.50 48.00 L 195.50 48.00 L 196.50 48.00 L 197.50 48.00 L 198.50 48.00 L 199.50 48.00 L 200.50 48.00 L 201.50 48.00 L 202.50 48.00 L 203.50 48.00 L 204.50 48.00 L 205.50 48.00 L 206.50 48.00 L 207.50 48.00 L 208.50 48.00 L 209.50 48.00 L 210.50 48.00 L 211.50 48.00 L 212.50 48.00 L 213.50 48.00 L 214.50 48.00 L 215.50 48.00 L 216.50 48.00 L 217.50 48.00 L 218.50 48.00 L 219.50 48.00 L 220.50 48.00 L 221.50 48.00 L 222.50 48.00 L 223.50 48.00 L 224.50 48.00 L 225.50 48.00 L 226.50 48.00 L 227.50 48.00 L 228.50 48.00 L 229.50 48.00 L 230.50 48.00 L 231.50 48.00 L 232.50 48.00 L 233.50 48.00 L 234.50 48.00 L 235.50 48.00 L 236.50 48.00 L 237.50 48.00 L 238.50 48.00 L 239.50 48.00 L 240.50 48.00 L 241.50 48.00 L 242.50 48.00 L 243.50 48.00 L 244.50 48.00 L 245.50 48.00 L 246.50 48.00 L 247.50 48.00 L 248.50 48.00 L 249.50 48.00 L 250.50 48.00 L 251.50 48.00 L 252.50 48.00 L 253.50 48.00 L 254.50 48.00 L 255.50 48.00 L 256.50 48.00 L 257.50 48.00 L 258.50 48.00 L 259.50 48.00 L 260.50 48.00 L 261.50 48.00 L 262.50 48.00 L 263.50 48.00 L 264.50 48.00 L 265.50 48.00 L 266.50 48.00 L 267.50 48.00 L 268.50 48.00 L 269.50 48.00 L 270.50 48.00 L 271.50 48.00 L 272.50 48.00 L 273.50 48.00 L 274.50 48.00 L 275.50 48.00 L 276.50 48.00 L 277.50 48.00 L 278.50 48.00 L 279.50 48.00 L 280.50 48.00 L 281.50 48.00 L 282.50 48.00 L 283.50 48.00 L 284.50 48.00 L 285.50 48.00 L 286.50 48.00 L 287.50 48.00 L 288.50 48.00 L 289.50 48.00 L 290.50 48.00 L 291.50 48.00 L 292.50 48.00 L 293.50 48.00 L 294.50 48.00 L 295.50 48.00 L 296.50 48.00 L 297.50 48.00 L 298.50 48.00 L 299.50 48.00 L 300.50 48.00 L 301.50 48.00 L 302.50 48.00 L 303.50 48.00 L 304.50 48.00 L 305.50 48.00 L 306.50 48.00 L 307.50 48.00 L 308.50 48.00 L 309.50 48.00 L 310.50 48.00 L 311.50 48.00 L 312.50 48.00 L 313.50 48.00 L 314.50 48.01 L 315.50 48.02 L 316.50 48.04 L 317.50 48.08 L 318.50 48.15 L 319.50 48.25 L 320.50 48.38 L 321.50 48.54 L 322.50 48.73 L 323.50 48.96 L 324.50 49.22 L 325.31 49.44 L 325.94 49.61 L 326.38 49.75 L 326.64 49.85 L 327.01 50.00 L 327.51 50.21 L 328.14 50.46 L 328.88 50.77 L 329.69 51.15 L 330.56 51.59 L 331.50 52.10 L 332.50 52.68 L 333.29 53.15 L 333.87 53.49 L 334.23 53.72 L 334.39 53.83 L 334.71 54.09 L 335.21 54.50 L 335.89 55.05 L 336.73 55.75 L 337.44 56.35 L 338.01 56.85 L 338.45 57.25 L 338.75 57.55 L 339.15 57.99 L 339.65 58.56 L 340.25 59.27 L 340.95 60.11 L 341.50 60.79 L 341.91 61.29 L 342.17 61.61 L 342.28 61.77 L 342.51 62.13 L 342.85 62.71 L 343.32 63.50 L 343.90 64.50 L 344.41 65.44 L 344.85 66.31 L 345.23 67.12 L 345.54 67.86 L 345.79 68.49 L 346.00 68.99 L 346.15 69.36 L 346.25 69.62 L 346.39 70.06 L 346.56 70.69 L 346.78 71.50 L 347.04 72.50 L 347.27 73.50 L 347.46 74.50 L 347.62 75.50 L 347.75 76.50 L 347.85 77.50 L 347.92 78.50 L 347.96 79.50 L 347.98 80.50 L 347.99 81.50 L 348.00 82.50 L 348.00 83.50 L 348.00 84.50 L 348.00 85.50 L 348.00 86.50 L 348.00 87.50 L 348.00 88.50 L 348.00 89.50 L 348.00 90.50 L 348.00 91.50 L 348.00 92.50 L 348.00 93.50 L 348.00 94.50 L 348.00 95.50 L 348.00 96.50 L 348.00 97.50 L 348.00 98.50 L 348.00 99.50 L 348.00 100.50 L 348.00 101.50 L 348.00 102.50 L 348.00 103.50 L 348.00 104.50 L 348.00 105.50 L 348.00 106.50 L 348.00 107.50 L 348.00 108.50 L 348.00 109.50 L 348.00 110.50 L 348.00 111.50 L 348.00 112.50 L 348.00 113.50 L 348.00 114.50 L 348.00 115.50 L 348.00 116.50 L 348.00 117.50 L 348.00 118.50 L 348.00 119.50 L 348.00 120.50 L 348.00 121.50 L 348.00 122.50 L 348.00 123.50 L 348.00 124.50 L 348.00 125.50 L 348.00 126.50 L 348.00 127.50 L 348.00 128.50 L 348.00 129.50 L 348.00 130.50 L 348.00 131.50 L 348.00 132.50 L 348.00 133.50 L 348.00 134.50 L 348.00 135.50 L 348.00 136.50 L 348.00 137.50 L 348.00 138.50 L 348.00 139.50 L 348.00 140.50 L 348.00 141.50 L 348.00 142.50 L 348.00 143.50 L 348.00 144.50 L 348.00 145.50 L 348.00 146.50 L 348.00 147.50 L 348.00 148.50 L 348.00 149.50 L 348.00 150.50 L 348.00 151.50 L 348.00 152.50 L 348.00 153.50 L 348.00 154.50 L 348.00 155.50 L 348.00 156.50 L 348.00 157.50 L 348.00 158.50 L 348.00 159.50 L 348.00 160.50 L 348.00 161.50 L 348.00 162.50 L 348.00 163.50 L 348.00 164.50 L 348.00 165.50 L 348.00 166.50 L 348.00 167.50 L 348.00 168.50 L 348.00 169.50 L 348.00 170.50 L 348.00 171.50 L 348.00 172.50 L 348.00 173.50 L 348.00 174.50 L 348.00 175.50 L 348.00 176.50 L 348.00 177.50 L 348.00 178.50 L 348.00 179.50 L 348.00 180.50 L 348.00 181.50 L 348.00 182.50 L 348.00 183.50 L 348.00 184.50 L 348.00 185.50 L 348.00 186.50 L 348.00 187.50 L 348.00 188.50 L 348.00 189.50 L 348.00 190.50 L 348.00 191.50 L 348.00 192.50 L 348.00 193.50 L 348.00 194.50 L 348.00 195.50 L 348.00 196.50 L 348.00 197.50 L 348.00 198.50 L 348.00 199.50 L 348.00 200.50 L 348.00 201.50 L 348.00 202.50 L 348.00 203.50 L 348.00 204.50 L 348.00 205.50 L 348.00 206.50 L 348.00 207.50 L 348.00 208.50 L 348.00 209.50 L 348.00 210.50 L 348.00 211.50 L 348.00 212.50 L 348.00 213.50 L 348.00 214.50 L 348.00 215.50 L 348.00 216.50 L 348.00 217.50 L 348.00 218.50 L 348.00 219.50 L 348.00 220.50 L 348.00 221.50 L 348.00 222.50 L 348.00 223.50 L 348.00 224.50 L 348.00 225.50 L 348.00 226.50 L 348.00 227.50 L 348.00 228.50 L 348.00 229.50 L 348.00 230.50 L 348.00 231.50 L 348.00 232.50 L 348.00 233.50 L 348.00 234.50 L 348.00 235.50 L 348.00 236.50 L 348.00 237.50 L 348.00 238.50 L 348.00 239.50 L 348.00 240.50 L 348.00 241.50 L 348.00 242.50 L 348.00 243.50 L 348.00 244.50 L 348.00 245.50 L 348.00 246.50 L 348.00 247.50 L 348.00 248.50 L 348.00 249.50 L 348.00 250.50 L 348.00 251.50 L 348.00 252.50 L 348.00 253.50 L 348.00 254.50 L 348.00 255.50 L 348.00 256.50 L 348.00 257.50 L 348.00 258.50 L 348.00 259.50 L 348.00 260.50 L 348.00 261.50 L 348.00 262.50 L 348.00 263.50 L 348.00 264.50 L 348.00 265.50 L 348.00 266.50 L 348.00 267.50 L 348.00 268.50 L 348.00 269.50 L 348.00 270.50 L 348.00 271.50 L 348.00 272.50 L 348.00 273.50 L 348.00 274.50 L 348.00 275.50 L 348.00 276.50 L 348.00 277.50 L 348.00 278.50 L 348.00 279.50 L 348.00 280.50 L 348.00 281.50 L 348.00 282.50 L 348.00 283.50 L 348.00 284.50 L 348.00 285.50 L 348.00 286.50 L 348.00 287.50 L 348.00 288.50 L 348.00 289.50 L 348.00 290.50 L 348.00 291.50 L 348.00 292.50 L 348.00 293.50 L 347.99 294.50 L 347.98 295.50 L 347.96 296.50 L 347.92 297.50 L 347.85 298.50 L 347.75 299.50 L 347.62 300.50 L 347.46 301.50 L 347.27 302.50 L 347.04 303.50 L 346.78 304.50 L 346.56 305.31 L 346.39 305.94 L 346.25 306.38 L 346.15 306.64 L 346.00 307.01 L 345.79 307.51 L 345.54 308.14 L 345.23 308.88 L 344.82 309.73 L 344.32 310.68 L 343.73 311.73 L 343.04 312.89 L 342.34 313.96 L 341.65 314.96 L 340.95 315.89 L 340.25 316.73 L 339.65 317.44 L 339.15 318.01 L 338.75 318.45 L 338.45 318.75 L 337.98 319.18 L 337.33 319.74 L 336.50 320.42 L 335.50 321.23 L 334.50 321.99 L 333.50 322.68 L 332.50 323.32 L 331.50 323.90 L 330.56 324.41 L 329.69 324.85 L 328.88 325.23 L 328.14 325.54 L 327.51 325.79 L 327.01 326.00 L 326.64 326.15 L 326.38 326.25 L 325.94 326.39 L 325.31 326.56 L 324.50 326.78 L 323.50 327.04 L 322.50 327.27 L 321.50 327.46 L 320.50 327.62 L 319.50 327.75 L 318.50 327.85 L 317.50 327.92 L 316.50 327.96 L 315.50 327.98 L 314.50 327.99 L 313.50 328.00 L 312.50 328.00 L 311.50 328.00 L 310.50 328.00 L 309.50 328.00 L 308.50 328.00 L 307.50 328.00 L 306.50 328.00 L 305.50 328.00 L 304.50 328.00 L 303.50 328.00 L 302.50 328.00 L 301.50 328.00 L 300.50 328.00 L 299.50 328.00 L 298.50 328.00 L 297.50 328.00 L 296.50 328.00 L 295.50 328.00 L 294.50 328.00 L 293.50 328.00 L 292.50 328.00 L 291.50 328.00 L 290.50 328.00 L 289.50 328.00 L 288.50 328.00 L 287.50 328.00 L 286.50 328.00 L 285.50 328.00 L 284.50 328.00 L 283.50 328.00 L 282.50 328.00 L 281.50 328.00 L 280.50 328.00 L 279.50 328.00 L 278.50 328.00 L 277.50 328.00 L 276.50 328.00 L 275.50 328.00 L 274.50 328.00 L 273.50 328.00 L 272.50 328.01 L 271.50 328.01 L 270.50 328.03 L 269.50 328.06 L 268.50 328.11 L 267.50 328.16 L 266.50 328.25 L 265.50 328.37 L 264.50 328.51 L 263.50 328.68 L 262.50 328.90 L 261.50 329.17 L 260.50 329.47 L 259.50 329.83 L 258.44 330.32 L 257.33 330.95 L 256.16 331.72 L 254.93 332.63 L 254.01 333.32 L 253.39 333.77 L 253.08 334.00 L 253.08 334.00 L 252.89 334.30 L 252.51 334.91 L 251.93 335.81 L 251.16 337.02 L 250.51 338.13 L 249.99 339.13 L 249.60 340.02 L 249.34 340.81 L 249.10 341.66 L 248.88 342.55 L 248.68 343.50 L 248.51 344.50 L 248.35 345.50 L 248.20 346.50 L 248.07 347.50 L 247.95 348.50 L 247.81 349.50 L 247.65 350.50 L 247.48 351.50 L 247.28 352.50 L 247.05 353.50 L 246.78 354.50 L 246.49 355.50 L 246.16 356.50 L 245.91 357.25 L 245.74 357.75 L 245.66 358.00 L 245.66 358.00 L 245.54 358.25 L 245.29 358.75 L 244.92 359.50 L 244.43 360.50 L 243.96 361.41 L 243.50 362.24 L 243.06 362.97 L 242.64 363.62 L 242.25 364.19 L 241.91 364.69 L 241.61 365.12 L 241.35 365.47 L 240.91 365.99 L 240.30 366.66 L 239.52 367.50 L 238.56 368.50 L 237.85 369.25 L 237.37 369.75 L 237.13 370.00 L 237.13 370.00 L 236.93 370.15 L 236.54 370.46 L 235.95 370.91 L 235.17 371.52 L 234.42 372.08 L 233.71 372.58 L 233.03 373.02 L 232.38 373.41 L 231.80 373.75 L 231.30 374.05 L 230.88 374.29 L 230.53 374.48 L 230.01 374.72 L 229.34 375.02 L 228.50 375.38 L 227.50 375.78 L 226.50 376.15 L 225.50 376.48 L 224.50 376.78 L 223.50 377.04 L 222.50 377.27 L 221.50 377.46 L 220.50 377.62 L 219.50 377.75 L 218.50 377.85 L 217.50 377.92 L 216.50 377.96 L 215.50 377.98 L 214.50 377.99 L 213.50 378.00 L 212.50 378.00 L 211.50 378.00 L 210.50 378.00 L 209.50 378.00 L 208.50 378.00 L 207.50 378.00 L 206.50 378.00 L 205.50 378.00 L 204.50 378.00 L 203.50 378.00 L 202.50 378.00 L 201.50 378.00 L 200.50 378.00 L 199.50 378.00 L 198.50 378.00 L 197.50 378.00 L 196.50 378.00 L 195.50 378.00 L 194.50 378.00 L 193.50 378.00 L 192.50 378.00 L 191.50 378.00 L 190.50 378.00 L 189.50 378.00 L 188.50 378.00 L 187.50 378.00 L 186.50 378.00 L 185.50 378.00 L 184.50 378.00 L 183.50 378.00 L 182.50 378.00 L 181.50 378.00 L 180.50 378.00 L 179.50 378.00 L 178.50 378.00 L 177.50 378.00 L 176.50 378.00 L 175.50 378.00 L 174.50 378.00 L 173.50 378.00 L 172.50 378.00 L 171.50 378.00 L 170.50 378.00 L 169.50 378.00 L 168.50 378.00 L 167.50 378.00 L 166.50 378.00 L 165.50 378.00 L 164.50 378.00 L 163.50 378.00 L 162.50 378.00 L 161.50 378.00 L 160.50 378.00 L 159.50 378.00 L 158.50 378.00 L 157.50 378.00 L 156.50 378.00 L 155.50 378.00 L 154.50 378.00 L 153.50 378.00 L 152.50 378.00 L 151.50 378.00 L 150.50 378.00 L 149.50 378.00 L 148.50 378.00 L 147.50 378.00 L 146.50 378.00 L 145.50 378.00 L 144.50 378.00 L 143.50 378.00 L 142.50 378.00 L 141.50 378.00 L 140.50 378.00 L 139.50 378.00 L 138.50 378.00 L 137.50 378.00 L 136.50 378.00 L 135.50 378.00 L 134.50 378.00 L 133.50 378.00 L 132.50 378.00 L 131.50 378.00 L 130.50 378.00 L 129.50 378.00 L 128.50 378.00 L 127.50 378.00 L 126.50 378.00 L 125.50 378.00 L 124.50 378.00 L 123.50 378.00 L 122.50 378.00 L 121.50 378.00 L 120.50 378.00 L 119.50 378.00 L 118.50 378.00 L 117.50 378.00 L 116.50 378.00 L 115.50 378.00 L 114.50 378.00 L 113.50 378.00 L 112.50 378.00 L 111.50 378.00 L 110.50 378.00 L 109.50 378.00 L 108.50 378.00 L 107.50 378.00 L 106.50 378.00 L 105.50 378.00 L 104.50 378.00 L 103.50 378.00 L 102.50 378.00 L 101.50 378.00 L 100.50 378.00 L 99.50 378.00 L 98.50 378.00 L 97.50 378.00 L 96.50 378.00 L 95.50 378.00 L 94.50 378.00 L 93.50 378.00 L 92.50 378.00 L 91.50 378.00 L 90.50 378.00 L 89.50 378.00 L 88.50 378.00 L 87.50 378.00 L 86.50 378.00 L 85.50 378.00 L 84.50 378.00 L 83.50 378.00 L 82.50 378.00 L 81.50 377.99 L 80.50 377.98 L 79.50 377.96 L 78.50 377.92 L 77.50 377.85 L 76.50 377.75 L 75.50 377.62 L 74.50 377.46 L 73.50 377.27 L 72.50 377.04 L 71.50 376.78 L 70.50 376.48 L 69.50 376.15 L 68.50 375.78 L 67.50 375.38 L 66.66 375.02 L 65.99 374.72 L 65.47 374.48 L 65.12 374.29 L 64.70 374.05 L 64.20 373.75 L 63.62 373.41 L 62.97 373.02 L 62.24 372.53 L 61.41 371.93 L 60.50 371.23 L 59.50 370.42 L 58.57 369.61 L 57.70 368.81 L 56.89 368.01 L 56.15 367.20 L 55.53 366.51 L 55.03 365.94 L 54.65 365.47 L 54.39 365.12 L 54.09 364.69 L 53.75 364.19 L 53.36 363.62 L 52.94 362.97 L 52.48 362.17 L 51.98 361.23 L 51.44 360.13 L 50.86 358.88 L 50.37 357.76 L 49.96 356.76 L 49.63 355.88 L 49.39 355.13 L 49.15 354.32 L 48.94 353.44 L 48.73 352.50 L 48.54 351.50 L 48.38 350.50 L 48.25 349.50 L 48.16 348.50 L 48.09 347.50 L 48.05 346.50 L 48.02 345.50 L 48.00 344.50 L 48.00 343.50 L 48.00 342.50 L 48.00 341.50 L 48.00 340.50 L 48.00 339.50 L 48.00 338.50 L 48.00 337.50 L 48.00 336.50 L 48.00 335.50 L 48.00 334.50 L 48.00 333.50 L 48.00 332.50 L 48.00 331.50 L 48.00 330.50 L 48.00 329.50 L 48.00 328.50 L 48.00 327.50 L 48.00 326.50 L 48.00 325.50 L 48.00 324.50 L 48.00 323.50 L 48.00 322.50 L 48.00 321.50 L 48.00 320.50 L 48.00 319.50 L 48.00 318.50 L 48.00 317.50 L 48.00 316.50 L 48.00 315.50 L 48.00 314.50 L 48.00 313.50 L 48.00 312.50 L 48.00 311.50 L 48.00 310.50 L 48.00 309.50 L 48.00 308.50 L 48.00 307.50 L 48.00 306.50 L 48.00 305.50 L 48.00 304.50 L 48.00 303.50 L 48.00 302.50 L 48.00 301.50 L 48.00 300.50 L 48.00 299.50 L 48.00 298.50 L 48.00 297.50 L 48.00 296.50 L 48.00 295.50 L 48.00 294.50 L 48.00 293.50 L 48.00 292.50 L 48.00 291.50 L 48.00 290.50 L 48.00 289.50 L 48.00 288.50 L 48.00 287.50 L 48.00 286.50 L 48.00 285.50 L 48.00 284.50 L 48.00 283.50 L 48.00 282.50 L 48.00 281.50 L 48.00 280.50 L 48.00 279.50 L 48.00 278.50 L 48.00 277.50 L 48.00 276.50 L 48.00 275.50 L 48.00 274.50 L 48.00 273.50 L 48.00 272.50 L 48.00 271.50 L 48.02 270.50 L 48.05 269.50 L 48.09 268.50 L 48.16 267.50 L 48.25 266.50 L 48.38 265.50 L 48.54 264.50 L 48.73 263.50 L 48.96 262.50 L 49.22 261.50 L 49.51 260.50 L 49.84 259.50 L 50.21 258.50 L 50.62 257.50 L 51.08 256.50 L 51.57 255.50 L 52.04 254.59 L 52.50 253.76 L 52.94 253.03 L 53.36 252.38 L 53.75 251.81 L 54.09 251.31 L 54.39 250.88 L 54.65 250.53 L 55.09 250.01 L 55.70 249.34 L 56.48 248.50 L 57.44 247.50 L 58.35 246.60 L 59.22 245.79 L 60.05 245.09 L 60.83 244.48 L 61.58 243.92 L 62.29 243.42 L 62.97 242.98 L 63.62 242.59 L 64.20 242.25 L 64.70 241.95 L 65.12 241.71 L 65.47 241.52 L 65.99 241.28 L 66.66 240.98 L 67.50 240.62 L 68.50 240.22 L 69.50 239.85 L 70.50 239.52 L 71.50 239.22 L 72.50 238.96 L 73.50 238.73 L 74.50 238.54 L 75.50 238.38 L 76.50 238.25 L 77.50 238.15 L 78.50 238.08 L 79.50 238.04 L 80.50 238.02 L 81.50 238.01 L 82.50 238.00 L 83.50 238.00 L 84.50 238.00 L 85.50 238.00 L 86.50 238.00 L 87.50 238.00 L 88.50 238.00 L 89.50 238.00 L 90.50 238.00 L 91.50 238.00 L 92.50 238.00 L 93.50 238.00 L 94.50 238.00 L 95.50 238.00 L 96.50 238.00 L 97.50 238.00 L 98.50 238.00 L 99.50 238.00 L 100.50 238.00 L 101.50 238.00 L 102.50 238.00 L 103.50 238.00 L 104.50 238.00 L 105.50 238.00 L 106.50 238.00 L 107.50 238.00 L 108.50 238.00 L 109.50 238.00 L 110.50 238.00 L 111.50 238.00 L 112.50 238.00 L 113.50 238.00 L 114.50 238.00 L 115.50 238.00 L 116.50 238.00 L 117.50 238.00 L 118.50 238.00 L 119.50 238.00 L 120.50 238.00 L 121.50 238.00 L 122.50 238.00 L 123.50 238.00 L 124.50 238.00 L 125.50 237.99 L 126.50 237.96 L 127.50 237.92 L 128.50 237.87 L 129.50 237.78 L 130.50 237.67 L 131.50 237.52 L 132.50 237.33 L 133.50 237.10 L 134.50 236.83 L 135.50 236.51 L 136.50 236.15 L 137.42 235.77 L 138.25 235.39 L 139.00 235.00 L 139.67 234.60 L 140.25 234.23 L 140.75 233.90 L 141.17 233.59 L 141.50 233.32 L 141.90 232.93 L 142.38 232.43 L 142.92 231.82 L 143.54 231.09 L 144.10 230.37 L 144.60 229.65 L 145.04 228.93 L 145.42 228.21 L 145.74 227.61 L 145.99 227.11 L 146.18 226.71 L 146.29 226.43 L 146.45 225.96 L 146.63 225.32 L 146.85 224.50 L 147.10 223.50 L 147.31 222.50 L 147.49 221.50 L 147.64 220.50 L 147.74 219.50 L 147.83 218.50 L 147.90 217.50 L 147.94 216.50 L 147.96 215.50 L 147.98 214.50 L 147.99 213.50 L 148.00 212.50 L 148.00 211.50 L 148.00 210.50 L 148.00 209.50 L 148.00 208.50 L 148.00 207.50 L 148.00 206.50 L 148.00 205.50 L 148.00 204.50 L 148.00 203.50 L 148.00 202.50 L 148.00 201.50 L 148.00 200.50 L 148.00 199.50 L 148.00 198.50 L 148.00 197.50 L 148.00 196.50 L 148.00 195.50 L 148.00 194.50 L 148.00 193.50 L 148.00 192.50 L 148.00 191.50 L 148.00 190.50 L 148.00 189.50 L 148.00 188.50 L 148.00 187.50 L 148.00 186.50 L 148.00 185.50 L 148.00 184.50 L 148.00 183.50 L 148.00 182.50 L 148.00 181.50 L 148.00 180.50 L 148.00 179.50 L 148.00 178.50 L 148.00 177.50 L 148.00 176.50 L 148.00 175.50 L 148.00 174.50 L 148.00 173.50 L 148.00 172.50 L 148.00 171.50 L 148.00 170.50 L 148.00 169.50 L 148.00 168.50 L 148.00 167.50 L 148.00 166.50 L 148.00 165.50 L 148.00 164.50 L 148.00 163.50 L 148.00 162.50 L 148.00 161.50 L 148.00 160.50 L 148.00 159.50 L 148.00 158.50 L 148.00 157.50 L 148.00 156.50 L 148.00 155.50 L 148.00 154.50 L 148.00 153.50 L 148.00 152.50 L 148.00 151.50 L 148.00 150.50 L 148.00 149.50 L 148.00 148.50 L 148.00 147.50 L 148.00 146.50 L 148.00 145.50 L 148.00 144.50 L 148.00 143.50 L 148.00 142.50 L 148.00 141.50 L 148.00 140.50 L 148.00 139.50 L 148.00 138.50 L 148.00 137.50 L 148.00 136.50 L 148.00 135.50 L 148.00 134.50 L 148.00 133.50 L 148.00 132.50 L 148.00 131.50 L 148.00 130.50 L 148.00 129.50 L 148.00 128.50 L 148.00 127.50 L 148.00 126.50 L 148.00 125.50 L 148.00 124.50 L 148.00 123.50 L 148.00 122.50 L 148.00 121.50 L 148.00 120.50 L 148.00 119.50 L 148.00 118.50 L 148.00 117.50 L 148.00 116.50 L 148.00 115.50 L 148.00 114.50 L 148.00 113.50 L 148.00 112.50 L 148.00 111.50 L 148.00 110.50 L 148.00 109.50 L 148.00 108.50 L 148.00 107.50 L 148.00 106.50 L 148.00 105.50 L 148.00 104.50 L 148.00 103.50 L 148.00 102.50 L 148.00 101.50 L 148.00 100.50 L 148.00 99.50 L 148.00 98.50 L 148.00 97.50 L 148.00 96.50 L 148.00 95.50 L 148.00 94.50 L 148.00 93.50 L 148.00 92.50 L 148.00 91.50 L 148.00 90.50 L 148.00 89.50 L 148.00 88.50 L 148.00 87.50 L 148.00 86.50 L 148.00 85.50 L 148.00 84.50 L 148.00 83.50 L 148.00 82.50 L 148.01 81.50 L 148.02 80.50 L 148.04 79.50 L 148.08 78.50 L 148.15 77.50 L 148.25 76.50 L 148.38 75.50 L 148.54 74.50 L 148.73 73.50 L 148.96 72.50 L 149.22 71.50 L 149.44 70.69 L 149.61 70.06 L 149.75 69.62 L 149.85 69.36 L 150.00 68.99 L 150.21 68.49 L 150.46 67.86 L 150.77 67.12 L 151.15 66.31 L 151.59 65.44 L 152.10 64.50 L 152.68 63.50 L 153.15 62.71 L 153.49 62.13 L 153.72 61.77 L 153.83 61.61 L 154.09 61.29 L 154.50 60.79 L 155.05 60.11 L 155.75 59.27 L 156.35 58.56 L 156.85 57.99 L 157.25 57.55 L 157.55 57.25 L 157.99 56.85 L 158.56 56.35 L 159.27 55.75 L 160.11 55.05 L 160.79 54.50 L 161.29 54.09 L 161.61 53.83 L 161.77 53.72 L 162.13 53.49 L 162.71 53.15 L 163.50 52.68 L 164.50 52.10 L 165.44 51.59 L 166.31 51.15 L 167.12 50.77 L 167.86 50.46 L 168.49 50.21 L 168.99 50.00 Z"
+                                fill="url(#weather-bg-grad)" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
+                        </svg>
+
+                        <!-- Content Overlay -->
+                        <div class="weather-content-overlay">
+
+                            <!-- Weather Icon (Top Right, compact) -->
+                            <div class="weather-icon-wrapper-top" id="weatherIconContainer">
+                                <div class="sun-ambient-glow"></div>
+                                <div class="css-sun">
+                                    <div class="sun-ray r1"></div>
+                                    <div class="sun-ray r2"></div>
+                                    <div class="sun-ray r3"></div>
+                                    <div class="sun-ray r4"></div>
+                                    <div class="sun-center"></div>
+                                </div>
+                            </div>
+
+                            <!-- Weather Details (Upper Section) -->
+                            <div class="weather-details-top">
+                                <div class="weather-temp-row">
+                                    <span id="currentTemp" class="weather-temp">--</span>
+                                    <span class="weather-unit">°C</span>
+                                </div>
+                                <div id="weatherCondition" class="weather-condition">Loading...</div>
+                                <div id="weatherCity" class="weather-location">Detecting Location...</div>
+                            </div>
+
+                            <!-- Lottie Animation (Bottom-Left Pocket) -->
+                            <div id="lottieIconContainer" class="weather-lottie-bottom"></div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===================================================== -->
+            <!-- Statistics -->
+            <!-- ===================================================== -->
+            <section class="stats-grid mt-4">
+                <!-- Card 1 -->
+                <div class="stat-card card-spotlight" data-spotlight-color="rgba(16, 185, 129, 0.15)">
+                    <div class="icon"><i class="bi bi-grid-1x2-fill"></i></div>
+                    <h2 id="farmCount" class="mt-2">0</h2>
+                    <p>Total Farms</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="stat-card card-spotlight" data-spotlight-color="rgba(16, 185, 129, 0.15)">
+                    <div class="icon"><i class="bi bi-aspect-ratio-fill"></i></div>
+                    <h2 id="farmArea" class="mt-2">--</h2>
+                    <p>Total Area</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="stat-card card-spotlight" data-spotlight-color="rgba(16, 185, 129, 0.15)">
+                    <div class="icon"><i class="bi bi-clipboard-data-fill"></i></div>
+                    <h2 id="analysisCount" class="mt-2">0</h2>
+                    <p>Analyses Run</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="stat-card card-spotlight" data-spotlight-color="rgba(16, 185, 129, 0.15)">
+                    <div class="icon"><i class="bi bi-heart-pulse-fill"></i></div>
+                    <h2 id="healthyFarms" class="mt-2">--</h2>
+                    <p>Healthy Farms</p>
+                </div>
+            </section>
+
+            <!-- ===================================================== -->
+            <!-- QUICK ACTIONS -->
+            <!-- ===================================================== -->
+            <section class="dashboard-section mt-5">
+                <div class="section-header">
+                    <h3>Quick Actions</h3>
+                </div>
+                <div class="quick-grid">
+
+                    <!-- Analyze Farm (Emerald) -->
+                    <div class="quick-card text-center p-4">
+                        <div class="quick-icon mb-3" style="font-size: 2rem;"><i class="bi bi-search"></i></div>
+                        <h5 class="mb-2">Analyze Farm</h5>
+                        <p class="mb-4 text-xs" style="min-height: 40px;">Run latest satellite analysis.</p>
+                        <button id="quickAnalyzeBtn" class="btn-slide slide-emerald w-100 py-2">
+                            <span>Initialize</span>
+                        </button>
+                    </div>
+
+                    <!-- Weather (Blue) -->
+                    <div class="quick-card text-center p-4">
+                        <div class="quick-icon mb-3" style="font-size: 2rem; color: #38bdf8 !important;"><i
+                                class="bi bi-cloud-rain-fill"></i></div>
+                        <h5 class="mb-2">Weather</h5>
+                        <p class="mb-4 text-xs" style="min-height: 40px;">View microclimate forecasts.</p>
+                        <a href="/weather" class="btn-slide slide-blue w-100 py-2" style="text-decoration: none;">
+                            <span>Forecast</span>
+                        </a>
+                    </div>
+
+                    <!-- History (Purple) -->
+                    <div class="quick-card text-center p-4">
+                        <div class="quick-icon mb-3" style="font-size: 2rem; color: #a78bfa !important;"><i
+                                class="bi bi-clock-history"></i></div>
+                        <h5 class="mb-2">History</h5>
+                        <p class="mb-4 text-xs" style="min-height: 40px;">View previous crop reports.</p>
+                        <a href="/history" class="btn-slide slide-purple w-100 py-2" style="text-decoration: none;">
+                            <span>Archive</span>
+                        </a>
+                    </div>
+
+                    <!-- AI Advisory (Yellow) -->
+                    <div class="quick-card text-center p-4">
+                        <div class="quick-icon mb-3" style="font-size: 2rem; color: #facc15 !important;"><i
+                                class="bi bi-lightning-charge-fill"></i></div>
+                        <h5 class="mb-2">AI Advisory</h5>
+                        <p class="mb-4 text-xs" style="min-height: 40px;">Gemini recommendations.</p>
+                        <a href="/advisory" class="btn-slide slide-yellow w-100 py-2" style="text-decoration: none;">
+                            <span>Open</span>
+                        </a>
+                    </div>
+
+                    <!-- Profile (Pink) -->
+                    <div class="quick-card text-center p-4">
+                        <div class="quick-icon mb-3" style="font-size: 2rem; color: #f472b6 !important;"><i
+                                class="bi bi-person-badge-fill"></i></div>
+                        <h5 class="mb-2">Profile</h5>
+                        <p class="mb-4 text-xs" style="min-height: 40px;">Update account settings.</p>
+                        <a href="/profile" class="btn-slide slide-pink w-100 py-2" style="text-decoration: none;">
+                            <span>Manage</span>
+                        </a>
+                    </div>
+
+                </div>
+            </section>
+            <!-- ===================================================== -->
+            <!-- FEEDBACK SECTION WITH SLIDING BUTTON -->
+            <!-- ===================================================== -->
+            <section class="dashboard-section mt-5 mb-5">
+                <div class="section-header">
+                    <div>
+                        <h3>Send Feedback</h3>
+                        <p>Tell us what's working and what isn't.</p>
+                    </div>
+                </div>
+                <div class="glass-panel p-5 w-100">
+                    <div class="feedback-stars justify-content-start" id="feedbackStars">
+                        <span data-value="5">&#9733;</span>
+                        <span data-value="4">&#9733;</span>
+                        <span data-value="3">&#9733;</span>
+                        <span data-value="2">&#9733;</span>
+                        <span data-value="1">&#9733;</span>
+                    </div>
+                    <textarea id="feedbackMessage" class="form-control w-100" rows="4"
+                        placeholder="How can we improve the TerraMind platform?"></textarea>
+
+                    <!-- Slide Animation Button -->
+                    <button id="feedbackSubmit" class="btn-slide slide-emerald mt-4 w-100 py-3 border-0"
+                        style="font-size: 1.1rem;">
+                        <span>Submit Transmission</span>
+                    </button>
+
+                    <div id="feedbackStatus" class="mt-3 text-center font-medium" style="color:var(--tm-emerald);">
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===================================================== -->
+            <!-- FOOTER -->
+            <!-- ===================================================== -->
+            <footer class="mt-5 pb-5 text-center"
+                style="opacity: 0.5; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 30px;">
+                <div style="letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px;">
+                    <strong>TerraMind</strong>
+                </div>
+                <div>Engineered for a sustainable future.</div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- RECENT ANALYSIS -- FULL LIST MODAL -->
+    <!-- ===================================================== -->
+    <div id="historyModalOverlay" class="modal-overlay">
+        <div class="modal-card">
+            <button class="modal-close" id="closeHistoryModal"><i class="bi bi-x"></i></button>
+            <h3 style="margin-bottom:24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">All
+                Analyses Records</h3>
+            <div id="fullHistoryContainer"></div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- FLOATING CHATBOT -->
+    <!-- ===================================================== -->
+    <button id="chatbotToggle" title="Ask TerraMind Assistant">
+        <i class="bi bi-robot"></i>
+    </button>
+
+    <div id="chatbotPanel">
+        <div id="chatbotHeader">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-robot" style="font-size: 1.2rem;"></i>
+                <span>Gemini Assistant</span>
+            </div>
+            <button id="chatbotClose"><i class="bi bi-x"></i></button>
+        </div>
+        <div id="chatbotMessages">
+            <div class="chat-bubble bot">
+                <strong style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--tm-emerald);">TerraMind
+                    AI</strong>
+                Hi! I am connected to the Gemini Vision Engine. I can help you with anything about your farms,
+                multispectral analysis, or general precision agriculture. How can I assist?
+            </div>
+        </div>
+        <div id="chatbotInputRow">
+            <input type="text" id="chatbotInput" placeholder="Message Gemini...">
+            <button id="chatbotSend"><i class="bi bi-send-fill" style="margin-left: -2px;"></i></button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+    <script>
+        // ==========================================
+        // STAGGERED MENU ANIMATION LOGIC
+        // ==========================================
+
+        const menuToggleBtn = document.getElementById("menuToggleBtn");
+        const menuIcon = document.getElementById("menuIcon");
+        const menuOverlay = document.getElementById("staggeredMenuOverlay");
+        const logoutBtnStaggered = document.getElementById("logoutBtnStaggered");
+
+        let isMenuOpen = false;
+
+        // Create a paused GSAP timeline
+        const staggeredMenuTl = gsap.timeline({ paused: true });
+
+        // 1. Show the overlay container and fade it in
+        staggeredMenuTl.to(menuOverlay, {
+            display: "flex",
+            opacity: 1,
+            duration: 0.3,
+            ease: "power2.inOut"
+        });
+
+        // 2. Stagger animate the links sliding up and fading in
+        staggeredMenuTl.to(".staggered-link", {
+            y: 0,
+            opacity: 1,
+            duration: 0.5,
+            stagger: 0.05,
+            ease: "power3.out"
+        }, "-=0.1");
+
+        // Handle hamburger button click
+        menuToggleBtn.addEventListener("click", () => {
+            if (!isMenuOpen) {
+                staggeredMenuTl.play();
+                document.body.style.overflow = "hidden";
+                menuIcon.classList.remove("bi-list");
+                menuIcon.classList.add("bi-x-lg");
+            } else {
+                staggeredMenuTl.reverse();
+                document.body.style.overflow = "auto";
+                menuIcon.classList.remove("bi-x-lg");
+                menuIcon.classList.add("bi-list");
+            }
+            isMenuOpen = !isMenuOpen;
+        });
+
+        // Close menu when pressing Escape
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && isMenuOpen) {
+                staggeredMenuTl.reverse();
+                document.body.style.overflow = "auto";
+                menuIcon.classList.remove("bi-x-lg");
+                menuIcon.classList.add("bi-list");
+                isMenuOpen = false;
+            }
+        });
+
+        // Wire up staggered logout button to the same handler as the main one
+        if (logoutBtnStaggered) {
+            logoutBtnStaggered.addEventListener("click", (e) => {
+                e.preventDefault();
+                const mainLogout = document.querySelector("[data-logout]");
+                if (mainLogout) mainLogout.click();
+                else window.location.href = "/logout";
+            });
+        }
+    </script>
+
+    <!-- Load OGL globally instead of as a module -->
+    <script src="https://unpkg.com/ogl@1.0.11/dist/ogl.umd.js"></script>
+
+    <script>
+        // ==========================================
+        // 1. TYPING EFFECT (Isolated so it never breaks)
+        // ==========================================
+        const hiddenNameEl = document.getElementById("hiddenUserName");
+        const nameToType = hiddenNameEl ? hiddenNameEl.innerText.trim() : "Spandan Das";
+        const heroUserEl = document.getElementById("heroUser");
+        let charIdx = 0;
+
+        function typeWriterEffect() {
+            if (charIdx < nameToType.length) {
+                heroUserEl.textContent += nameToType.charAt(charIdx);
+                charIdx++;
+                const randomSpeed = Math.random() * 60 + 40;
+                setTimeout(typeWriterEffect, randomSpeed);
+            }
+        }
+        setTimeout(typeWriterEffect, 600);
+
+        // ==========================================
+        // 2. SPECULAR WEBGL BUTTONS
+        // ==========================================
+        if (window.ogl) {
+            const { Renderer, Program, Mesh, Triangle, Color } = window.ogl;
+
+            const PAD = 20;
+
+            const VERT = `#version 300 es
+            in vec2 position;
+            void main() {
+              gl_Position = vec4(position, 0.0, 1.0);
+            }`;
+
+            const FRAG = `#version 300 es
+            precision highp float;
+
+            uniform vec2 uCenter;
+            uniform vec2 uHalfSize;
+            uniform float uRadius;
+            uniform float uAngle;
+            uniform float uPx;
+            uniform vec3 uLineColor;
+            uniform vec3 uBaseColor;
+            uniform float uIntensity;
+            uniform float uShineSize;
+            uniform float uShineFade;
+            uniform float uThickness;
+            uniform float uBaseWidth;
+
+            out vec4 fragColor;
+
+            float sdRoundedRect(vec2 p, vec2 b, float r) {
+              vec2 q = abs(p) - b + r;
+              return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+            }
+
+            float shapeSDF(vec2 p) { return sdRoundedRect(p, uHalfSize, uRadius); }
+
+            float gaussianLine(float d, float sigma) {
+              float x = d / (sigma + 1e-6);
+              float k = mix(1.0, 1.6, smoothstep(0.0, 1.5, x));
+              return exp(-k * x * x);
+            }
+
+            void main() {
+              vec2 p = gl_FragCoord.xy - uCenter;
+              float d = shapeSDF(p);
+              vec2 L = vec2(cos(uAngle), sin(uAngle));
+
+              float base = (1.0 - smoothstep(0.0, uBaseWidth, abs(d))) * 0.45;
+
+              vec2 nEll = normalize(p / (uHalfSize * uHalfSize) + 1e-6);
+              float phi = acos(clamp(abs(dot(nEll, L)), 0.0, 1.0));
+              float rim = 1.0 - smoothstep(uShineSize - uShineFade, uShineSize + uShineFade + 1e-4, phi);
+              float line = gaussianLine(d, uThickness);
+              float edgeClamp = 1.0 - smoothstep(0.5 * uPx, 3.0 * uPx, abs(d));
+              float hi = line * rim * edgeClamp * uIntensity;
+
+              vec3 col = uBaseColor * base + uLineColor * hi;
+              float a = clamp(base + hi, 0.0, 1.0);
+              fragColor = vec4(col, a);
+            }`;
+
+            document.querySelectorAll('.specular-btn').forEach(btn => {
+                const fx = btn.querySelector('.specular-fx');
+                if (!fx) return;
+
+                // Remove fallback CSS borders so the shader handles the edges
+                btn.style.border = "none";
+                btn.style.background = "transparent";
+
+                const p = {
+                    radius: 18,
+                    lineColor: btn.getAttribute('data-line-color') || '#ffffff',
+                    baseColor: btn.getAttribute('data-base-color') || '#525252',
+                    intensity: 1,
+                    shineSize: 10,
+                    shineFade: 40,
+                    thickness: 1,
+                    speed: 0.35,
+                    followMouse: true,
+                    proximity: 250,
+                    autoAnimate: false
+                };
+
+                const dpr = window.devicePixelRatio || 1;
+                const renderer = new Renderer({ alpha: true, premultipliedAlpha: true, antialias: true, dpr });
+                const gl = renderer.gl;
+                gl.clearColor(0, 0, 0, 0);
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+                const geometry = new Triangle(gl);
+                const lineC = new Color(p.lineColor);
+                const baseC = new Color(p.baseColor);
+
+                const program = new Program(gl, {
+                    vertex: VERT,
+                    fragment: FRAG,
+                    uniforms: {
+                        uCenter: { value: [0, 0] },
+                        uHalfSize: { value: [1, 1] },
+                        uRadius: { value: 0 },
+                        uAngle: { value: 2.4 },
+                        uPx: { value: dpr },
+                        uLineColor: { value: [lineC.r, lineC.g, lineC.b] },
+                        uBaseColor: { value: [baseC.r, baseC.g, baseC.b] },
+                        uIntensity: { value: 1 },
+                        uShineSize: { value: (p.shineSize * Math.PI) / 180 },
+                        uShineFade: { value: (p.shineFade * Math.PI) / 180 },
+                        uThickness: { value: p.thickness * dpr },
+                        uBaseWidth: { value: dpr }
+                    }
+                });
+
+                const mesh = new Mesh(gl, { geometry, program });
+                fx.appendChild(gl.canvas);
+
+                const sizeRef = { w: 1, h: 1 };
+
+                const resize = () => {
+                    const rect = btn.getBoundingClientRect();
+                    const w = rect.width;
+                    const h = rect.height;
+                    sizeRef.w = w;
+                    sizeRef.h = h;
+                    renderer.setSize(w + PAD * 2, h + PAD * 2);
+                    program.uniforms.uCenter.value = [(PAD + w / 2) * dpr, (PAD + h / 2) * dpr];
+                    program.uniforms.uHalfSize.value = [(w / 2) * dpr, (h / 2) * dpr];
+                    program.uniforms.uRadius.value = Math.min(p.radius, Math.min(w, h) / 2) * dpr;
+                };
+
+                const ro = new ResizeObserver(resize);
+                ro.observe(btn);
+                resize();
+
+                let pointerAngle = null;
+                let proximityT = 0;
+
+                const onPointerMove = e => {
+                    const rect = btn.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right);
+                    const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom);
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist === 0) {
+                        const nx = (e.clientX - cx) / (rect.width / 2);
+                        const ny = (cy - e.clientY) / (rect.height / 2);
+                        pointerAngle = Math.atan2(2 / rect.height, -2 / rect.width) + nx * 0.3 + ny * 0.15;
+                    } else {
+                        pointerAngle = Math.atan2(cy - e.clientY, e.clientX - cx);
+                    }
+                    const t = Math.max(0, 1 - dist / Math.max(p.proximity, 1));
+                    proximityT = t * t * (3 - 2 * t);
+                };
+
+                window.addEventListener('pointermove', onPointerMove);
+
+                let angle = 2.4;
+                let idleAngle = 2.4;
+                let bright = 0;
+                let last = performance.now();
+                let raf = 0;
+
+                const update = now => {
+                    raf = requestAnimationFrame(update);
+                    const dt = Math.min((now - last) / 1000, 0.05);
+                    last = now;
+
+                    idleAngle += p.speed * dt;
+                    const steer = p.followMouse && pointerAngle != null && (!p.autoAnimate || proximityT > 0);
+                    const target = steer ? pointerAngle : idleAngle;
+                    const diff = ((target - angle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+                    angle += diff * (1 - Math.exp(-dt * 7));
+
+                    const brightTarget = p.autoAnimate ? 1 : proximityT;
+                    bright += (brightTarget - bright) * (1 - Math.exp(-dt * 8));
+
+                    program.uniforms.uAngle.value = angle;
+                    program.uniforms.uIntensity.value = p.intensity * bright;
+                    renderer.render({ scene: mesh });
+                };
+
+                raf = requestAnimationFrame(update);
+            });
+        }
+    </script>
+
+    <script>
+        // ==========================================
+        // 3. SPOTLIGHT CARD EFFECT
+        // ==========================================
+        document.addEventListener("DOMContentLoaded", () => {
+            const spotlightCards = document.querySelectorAll('.card-spotlight');
+
+            spotlightCards.forEach(card => {
+                // Grab the custom emerald color from the HTML data attribute
+                const spotColor = card.getAttribute('data-spotlight-color') || 'rgba(255, 255, 255, 0.05)';
+                card.style.setProperty('--spotlight-color', spotColor);
+
+                // Track mouse movement inside the card
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    // Dynamically update the CSS variables
+                    card.style.setProperty('--mouse-x', `${x}px`);
+                    card.style.setProperty('--mouse-y', `${y}px`);
+                });
+            });
+        });
+    </script>
+
+    <script>
+        // ==========================================
+        // AUTO-DETECT LOCATION & DYNAMIC WEATHER
+        // ==========================================
+        async function autoDetectLocationAndWeather() {
+            const tempEl = document.getElementById("currentTemp");
+            const condEl = document.getElementById("weatherCondition");
+            const cityEl = document.getElementById("weatherCity");
+            const topLocationEl = document.getElementById("currentLocation");
+            const iconContainer = document.getElementById("weatherIconContainer");
+
+            // Convert Open-Meteo numeric weather codes into text and animated visuals
+            function updateWeatherVisuals(code) {
+                const weatherMap = {
+                    0: { text: "Clear Sky", icon: getSunHtml() },
+                    1: { text: "Mainly Clear", icon: getSunHtml() },
+                    2: { text: "Partly Cloudy", icon: getCloudSunHtml() },
+                    3: { text: "Overcast", icon: getCloudHtml() },
+                    45: { text: "Foggy", icon: getCloudHtml() },
+                    48: { text: "Foggy", icon: getCloudHtml() },
+                    51: { text: "Light Drizzle", icon: getRainHtml() },
+                    53: { text: "Moderate Drizzle", icon: getRainHtml() },
+                    55: { text: "Dense Drizzle", icon: getRainHtml() },
+                    61: { text: "Slight Rain", icon: getRainHtml() },
+                    63: { text: "Moderate Rain", icon: getRainHtml() },
+                    65: { text: "Heavy Rain", icon: getRainHtml() },
+                    71: { text: "Slight Snow", icon: getSnowHtml() },
+                    73: { text: "Moderate Snow", icon: getSnowHtml() },
+                    75: { text: "Heavy Snow", icon: getSnowHtml() },
+                    80: { text: "Showers", icon: getRainHtml() },
+                    81: { text: "Showers", icon: getRainHtml() },
+                    82: { text: "Violent Showers", icon: getRainHtml() },
+                    95: { text: "Thunderstorm", icon: getStormHtml() }
+                };
+
+                const current = weatherMap[code] || { text: "Clear", icon: getSunHtml() };
+                if (condEl) condEl.textContent = current.text;
+                if (iconContainer) iconContainer.innerHTML = current.icon;
+            }
+
+            // --- HTML Templates for Animated Weather Icons ---
+            function getSunHtml() {
+                return `
+                    <div class="sun-ambient-glow"></div>
+                    <div class="css-sun">
+                        <div class="sun-ray r1"></div><div class="sun-ray r2"></div>
+                        <div class="sun-ray r3"></div><div class="sun-ray r4"></div>
+                        <div class="sun-center"></div>
+                    </div>`;
+            }
+
+            function getCloudHtml() {
+                return `
+                    <div style="font-size: 50px;" class="animated-cloud">☁️</div>`;
+            }
+
+            function getCloudSunHtml() {
+                return `
+                    <div style="font-size: 45px;" class="animated-cloud">⛅</div>`;
+            }
+
+            function getRainHtml() {
+                return `
+                    <div style="font-size: 48px; position: relative;" class="animated-cloud">
+                        🌧️
+                    </div>`;
+            }
+
+            function getStormHtml() {
+                return `
+                    <div style="font-size: 48px; position: relative;" class="animated-cloud lightning-bolt">
+                        ⛈️
+                    </div>`;
+            }
+
+            function getSnowHtml() {
+                return `
+                    <div style="font-size: 48px;" class="animated-cloud snow-flake">
+                        ❄️
+                    </div>`;
+            }
+
+            async function loadWeatherData(lat, lon, knownCity = null) {
+                try {
+                    const weatherResponse = await fetch(
+                        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+                    );
+                    const weatherData = await weatherResponse.json();
+                    const current = weatherData.current_weather;
+
+                    if (current) {
+                        if (tempEl) tempEl.textContent = Math.round(current.temperature);
+                        updateWeatherVisuals(current.weathercode);
+                    }
+
+                    if (!knownCity) {
+                        const geoResponse = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+                        );
+                        const geoData = await geoResponse.json();
+                        const address = geoData.address || {};
+                        knownCity = address.city || address.town || address.village || address.suburb || address.county || "Howrah";
+                    }
+
+                    if (cityEl) cityEl.textContent = knownCity;
+                    if (topLocationEl) topLocationEl.textContent = knownCity;
+
+                } catch (error) {
+                    console.error("Error fetching weather data:", error);
+                    if (condEl) condEl.textContent = "Unavailable";
+                    if (cityEl) cityEl.textContent = "Howrah";
+                }
+            }
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => loadWeatherData(position.coords.latitude, position.coords.longitude),
+                    async () => {
+                        try {
+                            const ipResponse = await fetch("https://ipapi.co/json/");
+                            const ipData = await ipResponse.json();
+                            loadWeatherData(ipData.latitude, ipData.longitude, ipData.city);
+                        } catch (err) {
+                            loadWeatherData(22.5726, 88.3639, "Howrah");
+                        }
+                    }
+                );
+            } else {
+                loadWeatherData(22.5726, 88.3639, "Howrah");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", autoDetectLocationAndWeather);
+    </script>
+
+    <script>
+        // ==========================================
+        // GLOBAL CLICK SPARK ENGINE
+        // ==========================================
+        document.addEventListener('click', function (e) {
+            // Spark Configuration (Matching your React props)
+            const sparkCount = 8;
+            const sparkSize = 6;     // Base size in pixels
+            const sparkRadius = 30;  // How far they travel
+            const duration = 400;    // Milliseconds
+
+            for (let i = 0; i < sparkCount; i++) {
+                const spark = document.createElement('div');
+                spark.classList.add('click-spark');
+                document.body.appendChild(spark);
+
+                // Calculate radial explosion angle
+                const angle = (i * 2 * Math.PI) / sparkCount;
+
+                // X and Y travel distances
+                const tx = Math.cos(angle) * sparkRadius;
+                const ty = Math.sin(angle) * sparkRadius;
+
+                // Set exact click position
+                spark.style.left = `${e.clientX}px`;
+                spark.style.top = `${e.clientY}px`;
+                spark.style.width = `${sparkSize}px`;
+                spark.style.height = `${sparkSize}px`;
+
+                // Set the transition duration
+                spark.style.transition = `transform ${duration}ms ease-out, opacity ${duration}ms ease-out`;
+
+                // Trigger the explosion animation on the very next frame
+                requestAnimationFrame(() => {
+                    spark.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`;
+                    spark.style.opacity = '0';
+                });
+
+                // Clean up the DOM element after the animation finishes
+                setTimeout(() => {
+                    spark.remove();
+                }, duration);
+            }
+        });
+    </script>
+
+    <!-- ==========================================================
+         LOTTIE ANIMATION INITIALIZER
+         Loads farmer-lottie.json from /static/js/ at runtime.
+         Drop any Lottie JSON into static/js/farmer-lottie.json
+         to swap the animation.
+    ========================================================== -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const lottieContainer = document.getElementById('lottieIconContainer');
+            if (!lottieContainer || !window.lottie) return;
+
+            fetch("{{ url_for('static', filename='js/farmer-lottie.json') }}")
+                .then(res => {
+                    if (!res.ok) throw new Error('Lottie JSON not found');
+                    return res.json();
+                })
+                .then(animationData => {
+                    window.lottie.loadAnimation({
+                        container: lottieContainer,
+                        renderer: 'svg',
+                        loop: true,
+                        autoplay: true,
+                        animationData: animationData
+                    });
+                })
+                .catch(() => {
+                    // Silently hide the container if the JSON file is missing
+                    lottieContainer.style.display = 'none';
+                });
+        });
+    </script>
+
+
+</body>
+
+</html>
