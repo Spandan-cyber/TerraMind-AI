@@ -7,6 +7,7 @@ from flask import jsonify
 from flask import render_template
 from flask import session
 from flask import redirect
+from flask import url_for
 
 from services.farm_service import FarmService
 from services.supabase_service import supabase
@@ -41,9 +42,18 @@ def login():
             session.permanent = True
             session["user_id"] = response.user.id
             session["email"] = response.user.email
+            session["logged_in"] = True
+
+            try:
+                prof = FarmService.get_profile(response.user.id)
+                if prof:
+                    session["full_name"] = prof.get("full_name") or response.user.email.split("@")[0]
+                    session["profile_photo"] = prof.get("profile_image")
+            except Exception:
+                pass
 
             if not request.is_json and request.form:
-                return redirect("/dashboard")
+                return redirect(url_for("dashboard"))
 
             return jsonify({
                 "success": True,
@@ -74,7 +84,7 @@ def register():
 
     email = data.get("email", "").strip()
     password = data.get("password", "").strip()
-    name = data.get("name", "").strip()
+    full_name = (data.get("full_name") or data.get("name") or "").strip()
     phone = data.get("phone", "").strip()
 
     if not email or not password:
@@ -93,38 +103,32 @@ def register():
                 "message": "Registration failed. Please try again."
             }), 400
 
+        user_display_name = full_name or email.split("@")[0]
+
         # Create or update TerraMind profile
         try:
             supabase_admin.table("profiles").upsert({
                 "id": user.id,
-                "full_name": name or email.split("@")[0],
+                "full_name": user_display_name,
                 "phone": phone
             }).execute()
         except Exception as pe:
             print("Profile upsert notice:", pe)
 
-        # If Supabase returned a session, log the user into Flask too
-        if response.session:
-            session.permanent = True
-            session["user_id"] = user.id
-            session["email"] = user.email
-
-            if not request.is_json and request.form:
-                return redirect("/dashboard")
-
-            return jsonify({
-                "success": True,
-                "message": "Registration successful.",
-                "logged_in": True
-            })
+        # CRITICAL FIX: Save the typed name into the session so the dashboard picks it up
+        session.permanent = True
+        session["user_id"] = user.id
+        session["email"] = user.email
+        session["full_name"] = user_display_name
+        session["logged_in"] = True
 
         if not request.is_json and request.form:
-            return redirect("/login")
+            return redirect(url_for("dashboard"))
 
         return jsonify({
             "success": True,
-            "message": "Registration successful! You can now log in.",
-            "logged_in": False
+            "message": "Registration successful.",
+            "logged_in": True
         })
 
     except Exception as e:
@@ -213,24 +217,30 @@ def google_callback():
 
         # Create TerraMind profile for first-time Google users
         if not profile:
-
             supabase_admin.table("profiles").insert({
                 "id": user_id,
                 "full_name": full_name,
                 "phone": None,
                 "profile_image": profile_image
             }).execute()
-
             print("[OK] Created TerraMind profile for Google user")
+        else:
+            if not full_name and profile.get("full_name"):
+                full_name = profile.get("full_name")
+            if not profile_image and profile.get("profile_image"):
+                profile_image = profile.get("profile_image")
 
-        # Set Flask permanent session
+        # Set Flask permanent session with full user details for Frosted UI
         session.permanent = True
         session["user_id"] = user_id
         session["email"] = email
+        session["full_name"] = full_name or email.split("@")[0]
+        session["profile_photo"] = profile_image
+        session["logged_in"] = True
 
         print("[OK] Google login successful:", email)
 
-        return redirect("/dashboard")
+        return redirect(url_for("dashboard"))
 
     except Exception as e:
 
@@ -321,15 +331,14 @@ def update_profile():
         }), 500
 
 
+@auth.route("/logout", methods=["GET", "POST"])
 @auth.route("/api/logout", methods=["POST"])
 def logout():
-
     session.clear()
-
+    if request.method == "GET" or not request.is_json:
+        return redirect("/login")
     return jsonify({
-
         "success": True
-
     })
 
 @auth.route("/farms")

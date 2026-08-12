@@ -1502,7 +1502,7 @@
                         Profile &amp; Settings
                     </a>
 
-                    <a href="#" id="logoutBtnStaggered" class="staggered-link"
+                    <a href="/logout" id="logoutBtnStaggered" class="staggered-link"
                         style="color:#f87171; font-size: 2.5rem; margin-top: 1.25rem; text-decoration: none;">
                         <span class="menu-num"
                             style="color:rgba(248,113,113,0.6); font-size: 1.5rem; margin-right: 1rem;">--</span>
@@ -1864,13 +1864,11 @@
             }
         });
 
-        // Wire up staggered logout button to the same handler as the main one
+        // Wire up staggered logout button
         if (logoutBtnStaggered) {
             logoutBtnStaggered.addEventListener("click", (e) => {
                 e.preventDefault();
-                const mainLogout = document.querySelector("[data-logout]");
-                if (mainLogout) mainLogout.click();
-                else window.location.href = "/logout";
+                window.location.href = "/logout";
             });
         }
     </script>

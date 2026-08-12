@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
-from flask import Flask, redirect, render_template, session, jsonify
+from flask import Flask, redirect, render_template, session, jsonify, url_for
 from flask_cors import CORS
 
 from routes.analysis import analysis_bp
@@ -65,9 +65,19 @@ def home():
 
 @app.route("/dashboard")
 def dashboard():
-    if "user_id" not in session:
+    # Ensure user is logged in
+    if not session.get("logged_in") and "user_id" not in session:
         return redirect("/login")
     return render_template("dashboard.html")
+
+
+@app.route("/logout")
+def logout():
+    # Clear all session variables (removes user login state, name, photo, etc.)
+    session.clear()
+
+    # Redirect back to your login route
+    return redirect(url_for("auth.login") if "auth.login" in app.view_functions else "/login")
 
 
 if __name__ == "__main__":
