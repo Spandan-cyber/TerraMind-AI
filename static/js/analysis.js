@@ -316,17 +316,72 @@ function renderHealth() {
 }
 
 function renderAdvisory() {
+    const container = document.getElementById("adviceContainer");
+    const modalContent = document.getElementById("modalAdviceContent");
     const advList = Analysis.advisory;
-    const cards = document.querySelectorAll(".recommendation");
-    if (cards.length && Array.isArray(advList)) {
-        advList.forEach((adv, index) => {
-            if (cards[index]) {
-                const titleEl = cards[index].querySelector("h5");
-                const textEl = cards[index].querySelector("p");
-                if (titleEl) titleEl.textContent = adv.title;
-                if (textEl) textEl.textContent = adv.message;
-            }
-        });
+
+    if (!container) return;
+
+    if (!Array.isArray(advList) || !advList.length) {
+        container.className = "d-flex flex-column gap-3 flex-grow-1 justify-content-center text-muted text-center p-3";
+        container.innerHTML = `<div class="small"><i class="bi bi-check2-circle text-success me-1"></i> No critical field intervention required at this time.</div>`;
+        if (modalContent) {
+            modalContent.innerHTML = `<div class="text-muted small">No active advisories generated yet.</div>`;
+        }
+        return;
+    }
+
+    container.className = "d-flex flex-column gap-2 flex-grow-1 justify-content-start overflow-auto";
+    container.style.maxHeight = "340px";
+    container.style.scrollbarWidth = "thin";
+
+    const cardsHtml = advList.map(adv => {
+        const level = (adv.level || "info").toLowerCase();
+        let borderCol = "#38bdf8";
+        let badgeBg = "rgba(56, 189, 248, 0.15)";
+        let badgeColor = "#38bdf8";
+        let icon = "bi-info-circle";
+
+        if (level === "danger") {
+            borderCol = "#ef4444";
+            badgeBg = "rgba(239, 68, 68, 0.15)";
+            badgeColor = "#f87171";
+            icon = "bi-exclamation-octagon";
+        } else if (level === "warning") {
+            borderCol = "#f59e0b";
+            badgeBg = "rgba(245, 158, 11, 0.15)";
+            badgeColor = "#fbbf24";
+            icon = "bi-exclamation-triangle";
+        } else if (level === "success") {
+            borderCol = "#10b981";
+            badgeBg = "rgba(16, 185, 129, 0.15)";
+            badgeColor = "#34d399";
+            icon = "bi-check-circle";
+        }
+
+        const title = adv.title || "Crop Advisory";
+        const message = adv.message || adv.recommendation || "";
+
+        return `
+        <div class="inner-glass-card p-3 d-flex flex-column gap-1" style="border-left: 3px solid ${borderCol}; background: rgba(255,255,255,0.03); border-radius: 10px;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi ${icon}" style="color: ${badgeColor}; font-size: 0.95rem;"></i>
+                    <strong class="text-white" style="font-size: 0.9rem;">${title}</strong>
+                </div>
+                <span class="badge px-2 py-1" style="background: ${badgeBg}; color: ${badgeColor}; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; border-radius: 6px;">${level}</span>
+            </div>
+            <p class="mb-0" style="font-size: 0.82rem; line-height: 1.5; color: rgba(255, 255, 255, 0.75);">
+                ${message}
+            </p>
+        </div>
+        `;
+    }).join("");
+
+    container.innerHTML = cardsHtml;
+
+    if (modalContent) {
+        modalContent.innerHTML = cardsHtml;
     }
 }
 
