@@ -331,8 +331,7 @@
                     style="display:flex; width: 38px; height: 38px; border-radius: 50%; background: transparent; padding: 0; overflow: hidden;">
                     {% if session.get('profile_photo') %}
                     <img src="{{ session.get('profile_photo') }}" alt="Profile"
-                        style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"
-                        onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857';">
+                        style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                     {% else %}
                     <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857"
                         alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">

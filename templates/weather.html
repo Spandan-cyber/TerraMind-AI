@@ -194,8 +194,7 @@
                 
                 {% if session.get('profile_photo') %}
                     <!-- Shows your uploaded photo if it exists -->
-                    <img src="{{ session.get('profile_photo') }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"
-                        onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857';">
+                    <img src="{{ session.get('profile_photo') }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                 {% else %}
                     <!-- Sleek DiceBear fallback if no photo is uploaded yet -->
                     <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ session.get('full_name') or 'Spandan Das' }}&backgroundColor=047857" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">

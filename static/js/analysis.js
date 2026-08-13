@@ -428,48 +428,9 @@ function setLoadingState(loading) {
     });
 }
 
-function generateClientSvg(label, color1, color2) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
-      <defs>
-        <linearGradient id="g_${label}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#091410"/>
-          <stop offset="100%" stop-color="#06120d"/>
-        </linearGradient>
-        <radialGradient id="r_${label}" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="${color1}" stop-opacity="0.8"/>
-          <stop offset="60%" stop-color="${color2}" stop-opacity="0.5"/>
-          <stop offset="100%" stop-color="#022c22" stop-opacity="0.1"/>
-        </radialGradient>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#g_${label})"/>
-      <ellipse cx="300" cy="200" rx="220" ry="140" fill="url(#r_${label})"/>
-      <rect x="20" y="20" width="220" height="30" rx="6" fill="rgba(0,0,0,0.6)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
-      <circle cx="34" cy="35" r="4" fill="${color1}"/>
-      <text x="46" y="40" fill="#ecfdf5" font-family="sans-serif" font-size="11" font-weight="600">${label}</text>
-      <rect x="440" y="20" width="140" height="26" rx="13" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.3)"/>
-      <text x="510" y="37" text-anchor="middle" fill="#34d399" font-family="sans-serif" font-size="10" font-weight="600">Sentinel-2 • 10m</text>
-    </svg>`;
-    return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-}
-
 function updateImage(id, url) {
     const img = document.getElementById(id);
-    if (!img) return;
-    
-    let fallback = generateClientSvg("Natural RGB", "#10b981", "#047857");
-    if (id.toLowerCase().includes("ndvi")) fallback = generateClientSvg("NDVI Heatmap", "#22c55e", "#15803d");
-    if (id.toLowerCase().includes("ndwi")) fallback = generateClientSvg("NDWI Water Map", "#06b6d4", "#0284c7");
-    if (id.toLowerCase().includes("evi")) fallback = generateClientSvg("EVI Index", "#84cc16", "#4d7c0f");
-
-    if (url && url.trim()) {
-        img.src = url;
-        img.onerror = function() {
-            this.onerror = null;
-            this.src = fallback;
-        };
-    } else {
-        img.src = fallback;
-    }
+    if (img && url) img.src = url;
 }
 
 function setText(id, text) {

@@ -798,69 +798,43 @@ class SatelliteEngine:
         geometry
     ):
         """
-        Create all visualization URLs (RGB, NDVI, NDWI, EVI).
+        Create all visualization URLs.
         """
-        try:
-            rgb = cls.rgb_visualization(composite)
-            ndvi = cls.ndvi_visualization(indices["NDVI"])
-            ndwi = cls.ndwi_visualization(indices["NDWI"])
-            evi = cls.ndvi_visualization(indices.get("EVI", indices["NDVI"]))
 
-            return {
-                "rgb": cls.thumbnail(rgb, geometry),
-                "ndvi": cls.thumbnail(ndvi, geometry),
-                "ndwi": cls.thumbnail(ndwi, geometry),
-                "evi": cls.thumbnail(evi, geometry),
-            }
-        except Exception as e:
-            print(f"[WARN] Thumbnail generation notice: {e}")
-            return {
-                "rgb": cls.generate_svg_preview("Natural RGB (True Color)", "#10b981", "#047857"),
-                "ndvi": cls.generate_svg_preview("NDVI Spectral Heatmap", "#22c55e", "#15803d"),
-                "ndwi": cls.generate_svg_preview("NDWI Water Index", "#06b6d4", "#0284c7"),
-                "evi": cls.generate_svg_preview("EVI Enhanced Vegetation", "#84cc16", "#4d7c0f"),
-            }
+        rgb = cls.rgb_visualization(composite)
 
-    @staticmethod
-    def generate_svg_preview(title: str, c1: str = "#10b981", c2: str = "#047857") -> str:
-        """
-        Generates an SVG heatmap preview data URI for satellite visualization cards.
-        """
-        import urllib.parse
-        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#091410"/>
-      <stop offset="50%" stop-color="#0f291e"/>
-      <stop offset="100%" stop-color="#06120d"/>
-    </linearGradient>
-    <radialGradient id="heat" cx="50%" cy="45%" r="45%">
-      <stop offset="0%" stop-color="{c1}" stop-opacity="0.85"/>
-      <stop offset="40%" stop-color="{c2}" stop-opacity="0.6"/>
-      <stop offset="80%" stop-color="#064e3b" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#022c22" stop-opacity="0"/>
-    </radialGradient>
-    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.75"/>
-    </pattern>
-  </defs>
-  <rect width="100%" height="100%" fill="url(#bgGrad)"/>
-  <rect width="100%" height="100%" fill="url(#grid)"/>
-  <ellipse cx="300" cy="190" rx="200" ry="130" fill="url(#heat)"/>
-  <path d="M 180 220 Q 250 140 330 170 T 440 210 Q 400 270 300 260 Z" fill="{c1}" fill-opacity="0.4" stroke="{c1}" stroke-width="1.5" stroke-dasharray="4,4"/>
-  <rect x="20" y="20" width="220" height="32" rx="6" fill="rgba(0,0,0,0.65)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
-  <circle cx="34" cy="36" r="4" fill="{c1}"/>
-  <text x="46" y="41" fill="#ecfdf5" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="11" font-weight="600" letter-spacing="0.5">{title}</text>
-  <rect x="440" y="20" width="140" height="26" rx="13" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.3)"/>
-  <text x="510" y="37" text-anchor="middle" fill="#34d399" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="10" font-weight="600">Sentinel-2 • 10m</text>
-  <g transform="translate(470, 360)">
-    <rect width="110" height="12" rx="3" fill="url(#bgGrad)" stroke="rgba(255,255,255,0.1)"/>
-    <rect x="2" y="2" width="106" height="8" rx="2" fill="url(#heat)"/>
-    <text x="-4" y="9" text-anchor="end" fill="rgba(255,255,255,0.5)" font-size="8">Min</text>
-    <text x="114" y="9" text-anchor="start" fill="rgba(255,255,255,0.5)" font-size="8">Max</text>
-  </g>
-</svg>'''
-        return f"data:image/svg+xml;utf8,{urllib.parse.quote(svg)}"
+        ndvi = cls.ndvi_visualization(
+            indices["NDVI"]
+        )
+
+        ndwi = cls.ndwi_visualization(
+            indices["NDWI"]
+        )
+
+        return {
+
+            "rgb":
+
+                cls.thumbnail(
+                    rgb,
+                    geometry
+                ),
+
+            "ndvi":
+
+                cls.thumbnail(
+                    ndvi,
+                    geometry
+                ),
+
+            "ndwi":
+
+                cls.thumbnail(
+                    ndwi,
+                    geometry
+                )
+
+        }
 
     # =========================================================
     # NDVI HISTOGRAM
@@ -1688,10 +1662,10 @@ class SatelliteEngine:
             "history": history,
             "weather": weather,
             "visualization": {
-                "rgb": cls.generate_svg_preview("Natural RGB (True Color)", "#10b981", "#047857"),
-                "ndvi": cls.generate_svg_preview("NDVI Spectral Heatmap", "#22c55e", "#15803d"),
-                "ndwi": cls.generate_svg_preview("NDWI Water Index", "#06b6d4", "#0284c7"),
-                "evi": cls.generate_svg_preview("EVI Enhanced Vegetation", "#84cc16", "#4d7c0f")
+                "rgb": "",
+                "ndvi": "",
+                "ndwi": "",
+                "evi": ""
             },
             "advisory": advisory,
             "engine": {

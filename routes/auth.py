@@ -484,16 +484,13 @@ def profile_page():
             unique_filename = f"{session.get('user_id', 'user')}_{int(time.time())}_{filename}"
             filepath = os.path.join(uploads_dir, unique_filename)
             image.save(filepath)
-            image.seek(0)  # Reset stream position for Supabase upload
             session["profile_photo"] = f"/static/uploads/{unique_filename}"
         
         try:
             data = {}
             if full_name:
                 data["full_name"] = full_name.strip()
-            prof = FarmService.update_profile(session["user_id"], data, image)
-            if prof and prof.get("profile_image"):
-                session["profile_photo"] = prof.get("profile_image")
+            FarmService.update_profile(session["user_id"], data, image)
         except Exception as e:
             print("Error updating profile in database:", e)
             

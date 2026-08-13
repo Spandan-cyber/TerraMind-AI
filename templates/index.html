@@ -263,7 +263,7 @@
   
   <!-- The Tractor Lottie Animation -->
   <lottie-player 
-    src="{{ url_for('static', filename='animations/tractor.json') }}" 
+    src="/static/animations/tractor.json" 
     background="transparent" 
     speed="1" 
     style="width: 300px; height: 300px;" 
@@ -288,7 +288,7 @@
   
   <!-- The Farmer Lottie Animation -->
   <lottie-player 
-    src="{{ url_for('static', filename='animations/farmer.json') }}" 
+    src="/static/animations/farmer.json" 
     background="transparent" 
     speed="1" 
     style="width: 350px; height: 350px;" 
@@ -759,7 +759,6 @@
   }
 
   images[0].onload = render;
-  if (images[0].complete) render();
 
   // ScrollTrigger for the Flower Sequence
   gsap.to(sequence, {
@@ -823,7 +822,6 @@
   }
 
   imagesEarth[0].onload = renderEarth;
-  if (imagesEarth[0].complete) renderEarth();
 
   // --- THE MASTER TIMELINE ---
   // Scroll for 600% of the screen height to fit all 3 phases
@@ -904,7 +902,6 @@
   }
 
   imagesAi[0].onload = renderAi;
-  if (imagesAi[0].complete) renderAi();
 
   // --- THE AI MASTER TIMELINE ---
   const aiTl = gsap.timeline({
