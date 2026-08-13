@@ -1,8 +1,34 @@
 import uuid
+import math
 from services.supabase_service import supabase_admin as supabase
 
 
 class FarmService:
+
+    @staticmethod
+    def _calculate_area_hectares(boundary):
+        """Calculate polygon area from GeoJSON coordinates in hectares."""
+        if not boundary or boundary.get("type") != "Polygon":
+            return None
+
+        coordinates = boundary.get("coordinates") or []
+        if not coordinates or len(coordinates[0]) < 4:
+            raise ValueError("Invalid farm boundary: polygon needs at least 3 points.")
+
+        ring = coordinates[0]
+        radius_m = 6378137.0
+        area_sum = 0.0
+
+        for i in range(len(ring)):
+            lon1, lat1 = float(ring[i][0]), float(ring[i][1])
+            lon2, lat2 = float(ring[(i + 1) % len(ring)][0]), float(ring[(i + 1) % len(ring)][1])
+            area_sum += (
+                math.radians(lon2 - lon1)
+                * (2.0 + math.sin(math.radians(lat1)) + math.sin(math.radians(lat2)))
+            )
+
+        area_m2 = abs(area_sum * radius_m * radius_m / 2.0)
+        return round(area_m2 / 10000.0, 6)
 
     # =====================================================
     # CREATE FARM
@@ -27,7 +53,11 @@ class FarmService:
 
             "notes": data.get("notes"),
 
-            "area": data.get("area"),
+            "area": (
+                FarmService._calculate_area_hectares(data.get("boundary"))
+                if data.get("boundary") is not None
+                else data.get("area")
+            ),
 
             "latitude": data.get("latitude"),
 
@@ -160,6 +190,10 @@ class FarmService:
             if field in data:
 
                 payload[field] = data[field]
+
+        # Recalculate area whenever the boundary changes.
+        if "boundary" in data:
+            payload["area"] = FarmService._calculate_area_hectares(data.get("boundary"))
 
         response = (
 
