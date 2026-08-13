@@ -1,6 +1,20 @@
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+
+# Deterministic multi-location .env loading
+_app_dir = os.path.dirname(os.path.abspath(__file__))
+_parent_dir = os.path.dirname(_app_dir)
+
+for _env_path in [
+    os.path.join(_app_dir, ".env"),
+    os.path.join(_parent_dir, ".env"),
+    os.path.join(os.getcwd(), ".env"),
+    os.path.join(os.getcwd(), "terramindpush-main", ".env"),
+]:
+    if os.path.exists(_env_path):
+        load_dotenv(_env_path, override=False)
+
 from flask import Flask, redirect, render_template, session, jsonify, url_for
 from flask_cors import CORS
 
@@ -10,9 +24,6 @@ from routes.farms import farms
 from routes.weather import weather_bp
 from routes.chatbot import chatbot_bp
 from routes.feedback import feedback_bp
-
-# Load environment variables from .env file
-load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "terramind-dev-fallback-key-replace-in-production")
@@ -45,7 +56,7 @@ try:
     from services.gee_auth import initialize as init_earth_engine
     init_earth_engine()
 except Exception as _gee_err:
-    print("[WARN] Earth Engine startup warning:", _gee_err)
+    print("[WARN] Earth Engine startup notice:", _gee_err)
 
 
 @app.route("/api/health")
