@@ -1,5 +1,7 @@
 import os
 import time
+import math
+import json
 from werkzeug.utils import secure_filename
 from flask import Blueprint
 from flask import request
@@ -362,18 +364,45 @@ def add_farm_page():
         boundary = None
         lat = None
         lon = None
+        area_ha = None
         if boundaries_str:
             try:
-                import json
                 boundary = json.loads(boundaries_str)
                 coords = boundary.get("coordinates", [])
-                if coords and len(coords[0]) > 0:
-                    lons = [pt[0] for pt in coords[0]]
-                    lats = [pt[1] for pt in coords[0]]
+                ring = coords[0] if coords else []
+
+                if len(ring) >= 4:
+                    lons = [float(pt[0]) for pt in ring]
+                    lats = [float(pt[1]) for pt in ring]
                     lon = sum(lons) / len(lons)
                     lat = sum(lats) / len(lats)
-            except Exception as e:
+
+                    # Calculate geodesic polygon area on the server so the
+                    # stored value cannot disagree with the submitted boundary.
+                    radius_m = 6378137.0
+                    area_sum = 0.0
+                    for i in range(len(ring)):
+                        lon1, lat1 = lons[i], lats[i]
+                        lon2, lat2 = lons[(i + 1) % len(ring)], lats[(i + 1) % len(ring)]
+                        area_sum += (
+                            math.radians(lon2 - lon1)
+                            * (2.0 + math.sin(math.radians(lat1)) + math.sin(math.radians(lat2)))
+                        )
+
+                    area_m2 = abs(area_sum * radius_m * radius_m / 2.0)
+                    area_ha = area_m2 / 10000.0
+                else:
+                    return jsonify({
+                        "success": False,
+                        "message": "Invalid farm boundary: polygon needs at least 3 points."
+                    }), 400
+
+            except (ValueError, TypeError, KeyError, IndexError, json.JSONDecodeError) as e:
                 print("Error parsing boundary geojson:", e)
+                return jsonify({
+                    "success": False,
+                    "message": "Invalid farm boundary."
+                }), 400
 
         payload = {
             "farm_name": data.get("farm_name"),
@@ -382,6 +411,7 @@ def add_farm_page():
             "district": data.get("district"),
             "state": data.get("state"),
             "notes": data.get("notes"),
+            "area": round(area_ha, 6) if area_ha is not None else None,
             "latitude": lat or 22.5726,
             "longitude": lon or 88.3639,
             "boundary": boundary
