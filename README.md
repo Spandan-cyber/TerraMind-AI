@@ -13,20 +13,20 @@
 [![Google Gemini](https://img.shields.io/badge/AI-Gemini%20Flash-8E75B2.svg?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![Supabase](https://img.shields.io/badge/database-Supabase-3ECF8E.svg?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 
-[🌐 **Live Web Application**](https://terramind-ai.onrender.com) • [✨ Key Features](#-key-features) • [🔄 Project Flowchart](#-project-flowchart) • [🛠️ Tech Stack](#️-tech-stack) • [🚀 Quickstart](#-quickstart-guide) • [🛰️ Remote Sensing Science](#️-sentinel-2-index-formulas) • [🚢 Deployment](#-deployment-render)
+[ **Live Web Application**](https://terramind-ai.onrender.com) • [ Key Features](#-key-features) • [ Project Flowchart](#-project-flowchart) • [ Tech Stack](#️-tech-stack) • [ Quickstart](#-quickstart-guide) • [ Remote Sensing Science](#️-sentinel-2-index-formulas) • [ Deployment](#-deployment-render)
 
 </div>
 
 ---
 
-## 🌐 Live Deployment
+##  Live Deployment
 
 TerraMind AI is deployed and live on Render:
-👉 **[https://terramind-ai.onrender.com](https://terramind-ai.onrender.com)**
+ **[https://terramind-ai.onrender.com](https://terramind-ai.onrender.com)**
 
 ---
 
-## 🌾 Overview
+##  Overview
 
 **TerraMind AI** is an advanced agricultural intelligence and remote sensing platform designed to empower farmers, agronomists, and researchers with orbital telemetry, automated multispectral health indices, and generative AI agronomy advisories.
 
@@ -34,14 +34,14 @@ By synthesizing **Sentinel-2 Copernicus satellite imagery** via **Google Earth E
 
 ---
 
-## 🔄 Project Flowchart
+##  Project Flowchart
 
 ### 1. High-Level System Architecture & Execution Flow
 
 ```mermaid
 graph TD
     %% User Action Layer
-    User([👨‍🌾 Farmer / Agronomist]) -->|1. Sign in / OAuth| Auth[Supabase Auth / Google OAuth 2.0]
+    User([ Farmer / Agronomist]) -->|1. Sign in / OAuth| Auth[Supabase Auth / Google OAuth 2.0]
     User -->|2. Draw Farm Boundary| Map[Leaflet.js + Leaflet Draw]
     
     %% Farm Creation & Database Layer
@@ -62,7 +62,7 @@ graph TD
     
     %% Generative AI Agronomist Layer
     Indices & WeatherAPI -->|Multispectral Data + Meteorological Context| GeminiAI[Google Gemini AI Agronomist]
-    GeminiAI -->|Tri-Pillar Analysis| Advisory[💧 Irrigation + 🌿 Fertilizer + 🛡️ Pest Defense]
+    GeminiAI -->|Tri-Pillar Analysis| Advisory[ Irrigation +  Fertilizer +  Pest Defense]
     
     %% Analytics & User Interface
     Indices & MapTiles & Advisory -->|Cache & Store Results| SupaDB
@@ -98,7 +98,7 @@ graph TD
                                   ▼
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                       Google Gemini AI Agronomist                          │
-│     Tri-Pillar Advisory: 💧 Precision Irrigation | 🌿 Nutrition | 🛡️ Disease │
+│     Tri-Pillar Advisory:  Precision Irrigation |  Nutrition |  Disease │
 └────────────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -111,9 +111,9 @@ graph TD
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-### 🛰️ Orbital Telemetry & Multispectral Indices
+###  Orbital Telemetry & Multispectral Indices
 * **Sentinel-2 Multispectral Processing**: Automated retrieval and cloud-filtered composite rendering from ESA Copernicus constellation at 10-meter spatial resolution.
 * **5 Key Vegetation Indices**:
   * **NDVI (Normalized Difference Vegetation Index)**: Crop vigor, chlorophyll density, and canopy biomass.
@@ -123,36 +123,36 @@ graph TD
   * **NDMI (Normalized Difference Moisture Index)**: Moisture stress indicators across field acreage.
 * **Side-by-Side Tile Comparison**: Dual layer rendering comparing True-Color RGB satellite imagery with False-Color NDVI thermal heatmaps.
 
-### 🤖 Generative AI Agronomist (Google Gemini)
+###  Generative AI Agronomist (Google Gemini)
 * **Tri-Pillar Field Diagnostics**:
-  * 💧 **Precision Irrigation Scheduling**: Deficit/surplus water guidance matching plant evapotranspiration needs.
-  * 🌿 **Crop Nutrition & Fertilizer Formulation**: Targeted N-P-K nutrient balancing based on biomass metrics.
-  * 🛡️ **Disease & Pest Outbreak Prevention**: Proactive mitigation advice based on humidity and vegetation stress thresholds.
+  *  **Precision Irrigation Scheduling**: Deficit/surplus water guidance matching plant evapotranspiration needs.
+  *  **Crop Nutrition & Fertilizer Formulation**: Targeted N-P-K nutrient balancing based on biomass metrics.
+  *  **Disease & Pest Outbreak Prevention**: Proactive mitigation advice based on humidity and vegetation stress thresholds.
 * **Context-Aware Chatbot**: Floating in-app AI assistant powered by Gemini for real-time agricultural Q&A and farm navigation.
 
-### 🗺️ Interactive Geospatial Farm Mapping
+###  Interactive Geospatial Farm Mapping
 * **Leaflet.js + Leaflet Draw**: Interactive satellite polygon boundary delineation.
 * **Automated Geodesic Calculations**: Instant centroid latitude/longitude and precise acre calculation.
 * **Reverse Geocoding**: Live reverse geocoding via OpenStreetMap Nominatim for automatic city/region detection.
 
-### 📊 Magic Bento Grid & Analytics Dashboard
+###  Magic Bento Grid & Analytics Dashboard
 * **12-Column Responsive Bento Layout**: Health distribution cards, metadata gauges, Chart.js trends, and active alert timeline.
 * **Live Confidence Scoring**: Automated score synthesis with real-time DOM-synced visual indicators.
 * **High-Definition PDF Export Engine**: One-click client-side report export via `html2pdf.js` with high-DPI canvas capture.
 
-### ⛅ Hyper-Local Weather Intelligence
+###  Hyper-Local Weather Intelligence
 * **Open-Meteo Integration**: 7-day predictive meteorological forecasting (temperature, UV index, precipitation probability, humidity, wind velocity).
 * **Dynamic Weather Visuals Engine**: Animated weather hero with keyframe-animated icons and SVG morphing.
 * **Lottie Micro-Interactions**: High-performance JSON animations via `lottie-web`.
 
-### 🎨 Frost UI Design System
+###  Frost UI Design System
 * **Deep Black Glassmorphism**: High-contrast slate typography (`#cbd5e1`), vivid emerald accents (`#10b981`), ambient floating refractions.
 * **Trigonometric Click Spark Engine**: 8-particle radial physics explosion on user clicks.
 * **Staggered Full-Screen Menu**: Smooth GSAP-powered navigation overlay.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -169,7 +169,7 @@ graph TD
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```text
 terramindpush-main/
@@ -229,7 +229,7 @@ terramindpush-main/
 
 ---
 
-## 🚀 Quickstart Guide
+##  Quickstart Guide
 
 ### 1. Prerequisites
 * **Python 3.10+** installed on your machine.
@@ -297,7 +297,7 @@ http://127.0.0.1:5000
 
 ---
 
-## 🔐 Environment Variables
+##  Environment Variables
 
 | Variable | Description | Required |
 |---|---|:---:|
@@ -313,7 +313,7 @@ http://127.0.0.1:5000
 
 ---
 
-## 🛰️ Sentinel-2 Index Formulas
+##  Sentinel-2 Index Formulas
 
 | Index | Name | Formula | Agricultural Meaning |
 |---|---|---|---|
@@ -325,7 +325,7 @@ http://127.0.0.1:5000
 
 ---
 
-## 🚢 Deployment (Render)
+##  Deployment (Render)
 
 The project includes a production-ready `Procfile` for one-click deployment on **Render**:
 
@@ -344,7 +344,7 @@ web: gunicorn --timeout 120 --workers 2 app:app
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
