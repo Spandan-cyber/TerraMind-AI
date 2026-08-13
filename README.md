@@ -1,4 +1,4 @@
-# 🛰️ TerraMind AI — Precision Agriculture & Agronomy Intelligence Platform
+#TerraMind AI — Precision Agriculture & Agronomy Intelligence Platform
 
 <div align="center">
 
