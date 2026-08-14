@@ -723,6 +723,25 @@ class SatelliteEngine:
 
         )
 
+    #==========================================================
+    #EVI VISUALIZATION
+    #==========================================================
+    @classmethod
+    def evi_visualization(cls, evi):
+        return evi.visualize(
+            min=0,
+            max=1,
+            palette=[
+                "#8B0000",
+                "#FF4500",
+                "#FFA500",
+                "#FFFF00",
+                "#ADFF2F",
+                "#228B22",
+                "#006400"
+            ]
+        )
+
     # =========================================================
     # NDVI VISUALIZATION
     # =========================================================
@@ -823,6 +842,10 @@ class SatelliteEngine:
             indices["NDWI"]
         )
 
+        evi = cls.evi_visualization(
+            indices["EVI"]
+        )
+
         return {
 
             "rgb":
@@ -844,7 +867,9 @@ class SatelliteEngine:
                 cls.thumbnail(
                     ndwi,
                     geometry
-                )
+                ),
+            "evi": cls.thumbnail(evi, geometry)
+            
 
         }
 
