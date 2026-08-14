@@ -43,6 +43,8 @@ def get_farms():
     try:
 
         farms = FarmService.get_farms(user_id)
+        if farms is None:
+            farms = []
 
         return jsonify(farms)
 

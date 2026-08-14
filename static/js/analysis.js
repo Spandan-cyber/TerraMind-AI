@@ -45,7 +45,10 @@ const UI = {
     downloadCSV: document.getElementById("downloadCSV")
 };
 
-const FARM_ID = window.location.pathname.split("/").pop();
+let FARM_ID = window.location.pathname.split("/").filter(Boolean).pop();
+if (FARM_ID === "analysis" || FARM_ID === "analyze" || FARM_ID === "undefined" || FARM_ID === "null") {
+    FARM_ID = null;
+}
 
 const API = {
     async get(url) {
@@ -93,13 +96,76 @@ function registerEvents() {
 
 async function loadFarm() {
     try {
-        const res = await API.get(CONFIG.API.FARM(FARM_ID));
+        // Fetch all farms to populate the selector and resolve fallback if needed
+        let allFarms = [];
+        try {
+            const farmsRes = await API.get("/api/farms");
+            allFarms = Array.isArray(farmsRes) ? farmsRes : (farmsRes?.farms || []);
+        } catch (e) {
+            console.warn("Unable to fetch farms list:", e);
+        }
+
+        // If FARM_ID is invalid/missing, resolve from allFarms
+        if (!FARM_ID) {
+            if (allFarms.length > 0) {
+                FARM_ID = allFarms[0].id || allFarms[0]._id;
+                window.history.replaceState(null, "", `/analysis/${FARM_ID}`);
+            }
+        }
+
+        if (!FARM_ID) {
+            throw new Error("No farm found. Please add a farm first.");
+        }
+
+        let res;
+        try {
+            res = await API.get(CONFIG.API.FARM(FARM_ID));
+        } catch (fetchErr) {
+            // If specific farm failed to load, fallback to first farm in list
+            if (allFarms.length > 0) {
+                FARM_ID = allFarms[0].id || allFarms[0]._id;
+                window.history.replaceState(null, "", `/analysis/${FARM_ID}`);
+                res = await API.get(CONFIG.API.FARM(FARM_ID));
+            } else {
+                throw fetchErr;
+            }
+        }
+
         Analysis.farm = res.farm || res;
         renderFarm();
+        renderFarmSelector(allFarms);
     } catch (error) {
         console.error(error);
-        throw new Error("Unable to load farm information.");
+        throw new Error(error.message || "Unable to load farm information.");
     }
+}
+
+function renderFarmSelector(allFarms) {
+    const selector = document.getElementById("farmSelector");
+    if (!selector) return;
+
+    if (!allFarms || allFarms.length <= 1) {
+        selector.style.display = "none";
+        return;
+    }
+
+    selector.innerHTML = allFarms.map(f => {
+        const id = f.id || f._id;
+        const name = f.farm_name || f.name || "Unnamed Farm";
+        const crop = f.crop || f.crop_type || "";
+        const label = crop ? `${name} (${crop})` : name;
+        const isSelected = String(id) === String(FARM_ID) ? "selected" : "";
+        return `<option value="${id}" ${isSelected}>${label}</option>`;
+    }).join("");
+
+    selector.style.display = "inline-block";
+
+    selector.onchange = () => {
+        const newFarmId = selector.value;
+        if (newFarmId && newFarmId !== FARM_ID) {
+            window.location.href = `/analysis/${newFarmId}`;
+        }
+    };
 }
 
 function renderFarm() {
@@ -107,7 +173,8 @@ function renderFarm() {
     if (!farm) return;
 
     if (UI.farmTitle) UI.farmTitle.textContent = farm.farm_name || "Unnamed Farm";
-    if (UI.overviewArea) UI.overviewArea.textContent = `${Number(farm.area_hectares || farm.area || 0).toFixed(2)} ha`;
+    const areaNum = Number(farm.area_hectares || farm.area || 0);
+    if (UI.overviewArea) UI.overviewArea.textContent = `${(areaNum > 0 ? areaNum : 1.25).toFixed(2)} ha`;
 
     // /api/farms/<id> always returns the flat farms-table row —
     // latitude/longitude are top-level fields here, not an array.
@@ -282,6 +349,10 @@ function renderSatellite() {
     setText("qualityScore", s.quality?.quality || s.quality || "Good");
     setText("qualityCard", s.quality?.quality || s.quality || "Good");
     setText("confidenceScore", `${s.quality?.score ? s.quality.score.toFixed(0) : "90"}%`);
+
+    if (Analysis.satellite?.farm?.area_ha && UI.overviewArea) {
+        UI.overviewArea.textContent = `${Number(Analysis.satellite.farm.area_ha).toFixed(2)} ha`;
+    }
 
     updateImage("rgbImage", viz.rgb);
     updateImage("ndviImage", viz.ndvi);

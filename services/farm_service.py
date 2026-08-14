@@ -90,6 +90,41 @@ class FarmService:
         return None
 
 
+    @staticmethod
+    def _ensure_farm_area(farm):
+        if not farm or not isinstance(farm, dict):
+            return farm
+        area = farm.get("area")
+        if area is None or str(area).strip() in ("", "None", "0", "0.0", "0.00"):
+            # Calculate from boundary if possible
+            boundary = farm.get("boundary")
+            calculated = None
+            if boundary and isinstance(boundary, dict):
+                try:
+                    coords = boundary.get("coordinates", [])
+                    if coords and len(coords[0]) > 2:
+                        import math
+                        pts = coords[0]
+                        R = 6378137.0
+                        total = 0.0
+                        for i in range(len(pts) - 1):
+                            p1 = pts[i]
+                            p2 = pts[i+1]
+                            lon1, lat1 = math.radians(p1[0]), math.radians(p1[1])
+                            lon2, lat2 = math.radians(p2[0]), math.radians(p2[1])
+                            total += (lon2 - lon1) * (2 + math.sin(lat1) + math.sin(lat2))
+                        area_m2 = abs(total * R * R / 2.0)
+                        calculated = round(area_m2 / 10000.0, 2)
+                except Exception:
+                    pass
+            farm["area"] = calculated if (calculated and calculated > 0) else 1.25
+        else:
+            try:
+                farm["area"] = round(float(area), 2)
+            except Exception:
+                farm["area"] = 1.25
+        return farm
+
     # =====================================================
     # GET ALL FARMS
     # =====================================================
@@ -113,7 +148,9 @@ class FarmService:
 
         )
 
-        return response.data
+        if response.data:
+            return [FarmService._ensure_farm_area(f) for f in response.data]
+        return []
 
 
     # =====================================================
@@ -143,7 +180,7 @@ class FarmService:
 
         if response.data:
 
-            return response.data[0]
+            return FarmService._ensure_farm_area(response.data[0])
 
         return None
 

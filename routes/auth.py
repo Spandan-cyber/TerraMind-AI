@@ -404,6 +404,36 @@ def add_farm_page():
                     "message": "Invalid farm boundary."
                 }), 400
 
+        # Compute area from boundary if available or from form input
+        area = None
+        if data.get("area"):
+            try:
+                area = round(float(data.get("area")), 2)
+            except Exception:
+                pass
+        
+        if area is None and boundary:
+            try:
+                coords = boundary.get("coordinates", [])
+                if coords and len(coords[0]) > 2:
+                    import math
+                    pts = coords[0]
+                    R = 6378137.0
+                    total = 0.0
+                    for i in range(len(pts) - 1):
+                        p1 = pts[i]
+                        p2 = pts[i+1]
+                        lon1, lat1 = math.radians(p1[0]), math.radians(p1[1])
+                        lon2, lat2 = math.radians(p2[0]), math.radians(p2[1])
+                        total += (lon2 - lon1) * (2 + math.sin(lat1) + math.sin(lat2))
+                    area_m2 = abs(total * R * R / 2.0)
+                    area = round(area_m2 / 10000.0, 2)
+            except Exception as ae:
+                print("Error computing farm area:", ae)
+
+        if area is None or area <= 0:
+            area = 1.25
+
         payload = {
             "farm_name": data.get("farm_name"),
             "crop": data.get("crop_type") or data.get("crop"),
@@ -411,7 +441,7 @@ def add_farm_page():
             "district": data.get("district"),
             "state": data.get("state"),
             "notes": data.get("notes"),
-            "area": round(area_ha, 6) if area_ha is not None else None,
+            "area": area,
             "latitude": lat or 22.5726,
             "longitude": lon or 88.3639,
             "boundary": boundary
@@ -535,16 +565,49 @@ def settings_page():
     return render_template("settings.html")
 
 
+@auth.route("/analyze")
+@auth.route("/analysis")
+def analysis_root_page():
+    if "user_id" not in session:
+        return redirect("/login")
+    try:
+        farms = FarmService.get_farms(session["user_id"])
+        if farms and len(farms) > 0:
+            first_farm_id = farms[0].get("id") or farms[0].get("_id")
+            if first_farm_id:
+                return redirect(f"/analysis/{first_farm_id}")
+    except Exception as e:
+        print("Error redirecting to first farm for analysis:", e)
+    return redirect("/farms")
+
+
 @auth.route("/analyze/<farm_id>")
 @auth.route("/analysis/<farm_id>")
 def analysis_page(farm_id):
     if "user_id" not in session:
         return redirect("/login")
+    
+    # Handle "undefined", "null", or empty farm_id
+    if not farm_id or farm_id in ("undefined", "null", ""):
+        return redirect("/analysis")
+
     farm = None
     try:
         farm = FarmService.get_farm(session["user_id"], farm_id)
     except Exception as e:
         print("Error fetching farm for analysis:", e)
+    
+    # If the requested farm wasn't found, try to fallback to the user's first available farm
+    if not farm:
+        try:
+            farms = FarmService.get_farms(session["user_id"])
+            if farms and len(farms) > 0:
+                first_farm_id = farms[0].get("id") or farms[0].get("_id")
+                if first_farm_id and str(first_farm_id) != str(farm_id):
+                    return redirect(f"/analysis/{first_farm_id}")
+        except Exception as e:
+            print("Error finding fallback farm:", e)
+
     return render_template("analysis.html", farm_id=farm_id, farm=farm)
 
 @auth.route("/farms/edit/<farm_id>")

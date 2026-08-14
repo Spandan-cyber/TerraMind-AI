@@ -107,7 +107,7 @@
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
-            width: 100vw !important;
+            width: 100% !important;
             height: 80px !important;
             z-index: 2000 !important;
             background: rgba(10, 10, 12, 0.7) !important;
@@ -244,15 +244,42 @@
         .metadata-grid,
         .health-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
         }
 
         .image-grid,
         .analytics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .image-grid img,
+        .gallery-image {
+            max-width: 100% !important;
+            width: 100% !important;
+            height: auto !important;
+            object-fit: cover !important;
+            border-radius: 12px;
+        }
+
+        .bento-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .health-distribution-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .metadata-subgrid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }
 
         #staggeredMenuOverlay {
@@ -274,6 +301,168 @@
             box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
             transform: translate(-50%, -50%) scale(1);
             opacity: 1;
+        }
+
+        /* ==========================================================
+           RESPONSIVE MOBILE & TABLET STYLING
+        ========================================================== */
+        @media (max-width: 992px) {
+            .content {
+                padding: 100px 3% 40px 3% !important;
+            }
+
+            .bento-container {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 16px !important;
+            }
+
+            .bento-container > div {
+                grid-column: span 12 !important;
+                width: 100% !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 95px 16px 35px 16px !important;
+            }
+
+            .topbar {
+                padding: 0 16px !important;
+                height: 70px !important;
+            }
+
+            #farmTitle {
+                font-size: 1.8rem !important;
+            }
+
+            .frost-panel {
+                padding: 18px 14px !important;
+                border-radius: 16px !important;
+                margin-bottom: 16px !important;
+            }
+
+            .inner-glass-card {
+                padding: 14px !important;
+                border-radius: 12px !important;
+            }
+
+            .image-grid {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+
+            .image-grid img {
+                min-height: 180px !important;
+                max-height: 300px !important;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+            }
+
+            .indices-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+            }
+
+            .metadata-subgrid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content {
+                padding: 85px 10px 30px 10px !important;
+            }
+
+            #farmTitle {
+                font-size: 1.5rem !important;
+            }
+
+            #farmSelector {
+                width: 100% !important;
+                font-size: 0.85rem !important;
+            }
+
+            .health-distribution-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 6px !important;
+            }
+
+            .health-distribution-grid .inner-glass-card {
+                padding: 10px 4px !important;
+            }
+
+            .health-distribution-grid h2 {
+                font-size: 1.25rem !important;
+            }
+
+            .health-distribution-grid small {
+                font-size: 0.72rem !important;
+            }
+
+            .metadata-subgrid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 6px !important;
+            }
+
+            .metadata-subgrid .inner-glass-card {
+                padding: 8px 4px !important;
+            }
+
+            .metadata-subgrid strong {
+                font-size: 0.78rem !important;
+            }
+
+            .metadata-subgrid small {
+                font-size: 0.68rem !important;
+            }
+
+            .weather-forecast-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+
+            .weather-forecast-header .weather-metrics {
+                text-align: left !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 10px !important;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+            }
+
+            .summary-grid .inner-glass-card {
+                padding: 10px 8px !important;
+                gap: 8px !important;
+            }
+
+            .summary-grid .inner-glass-card > div:first-child {
+                width: 36px !important;
+                height: 36px !important;
+                font-size: 1.2rem !important;
+            }
+
+            .indices-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+            }
+
+            .indices-grid h2 {
+                font-size: 1.35rem !important;
+            }
+
+            .score-circle {
+                font-size: 2.6rem !important;
+            }
         }
     </style>
 
@@ -392,10 +581,15 @@
         <!-- Header Actions -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-4">
             <div>
-                <h1 id="farmTitle"
-                    style="font-size: 2.8rem; font-weight: 700; letter-spacing: -1px; color: #fff; margin-bottom: 5px;">
-                    Loading Farm...</h1>
-                <p style="color: var(--text-muted); font-size: 1.1rem; margin: 0;">Satellite Intelligence Dashboard</p>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <h1 id="farmTitle"
+                        style="font-size: 2.8rem; font-weight: 700; letter-spacing: -1px; color: #fff; margin-bottom: 0;">
+                        Loading Farm...</h1>
+                    <select id="farmSelector" class="form-select"
+                        style="display: none; width: auto; min-width: 180px; background: rgba(20,20,25,0.7); color: #34d399; border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 6px 14px; font-size: 0.95rem; font-weight: 600; backdrop-filter: blur(12px); outline: none; cursor: pointer;">
+                    </select>
+                </div>
+                <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 4px; margin-bottom: 0;">Satellite Intelligence Dashboard</p>
             </div>
             <div class="d-flex gap-2">
                 <button id="refreshAnalysis" class="btn-slide slide-emerald border-0"><span><i
@@ -572,12 +766,12 @@
     <!-- ===================================================== -->
     <!-- MAGIC BENTO GRID: HEALTH DISTRIBUTION TO ALERTS -->
     <!-- ===================================================== -->
-    <div class="bento-container mb-4" style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px;">
+    <div class="bento-container mb-4">
         
         <!-- 1. Health Distribution (Span 6) -->
         <div class="frost-panel card-spotlight p-4 d-flex flex-column justify-content-between" style="grid-column: span 6; margin-bottom: 0;">
             <h3 class="fw-bold mb-3">🌾 Health Distribution</h3>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div class="health-distribution-grid">
                 <div class="inner-glass-card text-center p-3" style="border-bottom: 4px solid var(--tm-emerald) !important;">
                     <h2 id="healthyPercent" class="fw-bold m-0">--</h2>
                     <small class="text-muted">Healthy</small>
@@ -596,7 +790,7 @@
         <!-- 2. Satellite Metadata (Span 6) -->
         <div class="frost-panel card-spotlight p-4 d-flex flex-column justify-content-between" style="grid-column: span 6; margin-bottom: 0;">
             <h3 class="fw-bold mb-3">☁ Satellite Metadata</h3>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div class="metadata-subgrid">
                 <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Satellite</small><strong class="text-white" style="font-size: 0.85rem;">Sentinel-2</strong></div>
                 <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Capture Date</small><strong id="captureDateCard" class="text-white" style="font-size: 0.85rem;">--</strong></div>
                 <div class="inner-glass-card p-2 text-center"><small class="text-muted d-block" style="font-size: 0.75rem;">Cloud Cover</small><strong id="cloudCoverCard" class="text-white" style="font-size: 0.85rem;">--</strong></div>
@@ -618,7 +812,7 @@
         <!-- 4. Weather Forecast (Span 6) -->
         <div class="frost-panel card-spotlight p-4 d-flex flex-column" style="grid-column: span 6; margin-bottom: 0;">
             <h3 class="fw-bold mb-3">🌤 Weather Forecast</h3>
-            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3" style="border-color: rgba(255,255,255,0.08) !important;">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3 weather-forecast-header" style="border-color: rgba(255,255,255,0.08) !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="weather-icon" style="font-size: 2.8rem; line-height: 1;">☀️</div>
                     <div>
@@ -627,7 +821,7 @@
                         <p id="weatherCity" class="text-muted m-0" style="font-size: 0.8rem;">--</p>
                     </div>
                 </div>
-                <div class="text-end text-muted small" style="line-height: 1.6; font-size: 0.8rem;">
+                <div class="text-end text-muted small weather-metrics" style="line-height: 1.6; font-size: 0.8rem;">
                     <div>Humidity: <strong id="humidity" class="text-white">--</strong></div>
                     <div>Wind: <strong id="wind" class="text-white">--</strong></div>
                     <div>Rain: <strong id="rainProbability" class="text-white">--</strong></div>
@@ -644,7 +838,7 @@
                 <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="modal" data-bs-target="#trendModal"><i class="bi bi-info-circle"></i></button>
             </div>
             <div class="row">
-                <div class="col-md-6"><canvas id="ndviTrendChart"></canvas></div>
+                <div class="col-md-6 mb-3 mb-md-0"><canvas id="ndviTrendChart"></canvas></div>
                 <div class="col-md-6"><canvas id="healthChart"></canvas></div>
             </div>
         </div>
@@ -662,15 +856,6 @@
         </div>
 
     </div>
-
-    <!-- Responsive Mobile Fallback -->
-    <style>
-        @media (max-width: 992px) {
-            .bento-container > div {
-                grid-column: span 12 !important;
-            }
-        }
-    </style>
 
         <!-- CONFIDENCE & SUMMARY -->
         <div class="row mb-4">

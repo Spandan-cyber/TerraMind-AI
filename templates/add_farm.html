@@ -255,6 +255,7 @@
             <form action="/add-farm" method="POST" id="farmForm" class="frost-panel p-3 d-flex flex-column gap-3 flex-grow-1" style="overflow-y: auto; max-height: calc(100vh - 250px);">
                 
                 <input type="hidden" name="farm_boundaries" id="farmBoundaries">
+                <input type="hidden" name="area" id="farmAreaInput">
 
                 <!-- 1. Search Location -->
                 <div>
@@ -443,6 +444,8 @@
             
             // Update the DOM
             document.getElementById('metricArea').innerText = areaHa.toFixed(2) + " ha";
+            const areaInput = document.getElementById('farmAreaInput');
+            if (areaInput) areaInput.value = areaHa.toFixed(2);
             document.getElementById('metricPerimeter').innerText = perimeter.toFixed(2) + " m";
             document.getElementById('metricVertices').innerText = latlngs.length;
             
@@ -475,6 +478,8 @@
         // When a user deletes a shape
         map.on('draw:deleted', function () {
             document.getElementById('farmBoundaries').value = '';
+            const areaInput = document.getElementById('farmAreaInput');
+            if (areaInput) areaInput.value = '';
             document.getElementById('metricArea').innerText = '--';
             document.getElementById('metricPerimeter').innerText = '--';
             document.getElementById('metricVertices').innerText = '0';

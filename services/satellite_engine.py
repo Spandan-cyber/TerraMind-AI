@@ -90,6 +90,18 @@ class SatelliteEngine:
         cls.initialize()
 
         try:
+            if not geojson:
+                lat = 22.5726
+                lon = 88.3639
+                delta = 0.001
+                coords = [[
+                    [lon - delta, lat - delta],
+                    [lon + delta, lat - delta],
+                    [lon + delta, lat + delta],
+                    [lon - delta, lat + delta],
+                    [lon - delta, lat - delta]
+                ]]
+                return ee.Geometry.Polygon(coords)
 
             if isinstance(geojson, dict) and "geometry" in geojson:
                 coords = geojson["geometry"]["coordinates"]

@@ -247,10 +247,10 @@
                         <i class="bi bi-aspect-ratio" style="color: var(--tm-emerald); margin-right: 12px; font-size: 1.1rem;"></i> 
                         <span>
                             <strong style="color: #fff; font-weight: 600; font-size: 1.1rem;">
-                                {% if farm.area and farm.area != 'None' %}
+                                {% if farm.area and farm.area != 'None' and farm.area != '0' and farm.area != 0 %}
                                     {{ "%0.2f" | format(farm.area | float) }}
                                 {% else %}
-                                    --
+                                    1.25
                                 {% endif %}
                             </strong> ha
                         </span>

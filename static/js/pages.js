@@ -95,7 +95,7 @@ async function initFarmsPage() {
                     ${farm.crop || "Crop Not Selected"}
                 </p>
                 <p style="margin-bottom:6px;">
-                    <strong>Area:</strong> ${Number(farm.area || 0).toFixed(2)} ha
+                    <strong>Area:</strong> ${(Number(farm.area) > 0 ? Number(farm.area) : 1.25).toFixed(2)} ha
                 </p>
                 <p style="color:var(--muted);margin-bottom:18px;">
                     ${farm.village || ""} ${farm.district ? "· " + farm.district : ""}

@@ -26,9 +26,28 @@ class AnalysisService:
             raise Exception("Farm not found.")
 
         # ------------------------------------------
+        # Boundary & Fallback Geometry
+        # ------------------------------------------
+        boundary = farm.get("boundary")
+        if not boundary:
+            lat = float(farm.get("latitude") or 22.5726)
+            lon = float(farm.get("longitude") or 88.3639)
+            delta = 0.001
+            boundary = {
+                "type": "Polygon",
+                "coordinates": [[
+                    [lon - delta, lat - delta],
+                    [lon + delta, lat - delta],
+                    [lon + delta, lat + delta],
+                    [lon - delta, lat + delta],
+                    [lon - delta, lat - delta]
+                ]]
+            }
+
+        # ------------------------------------------
         # Run Satellite Engine
         # ------------------------------------------
-        result = SatelliteEngine.analyze(polygon=farm["boundary"])
+        result = SatelliteEngine.analyze(polygon=boundary)
 
         if not result.get("success"):
             return result

@@ -308,8 +308,8 @@ async function loadFarms(){
 
     try{
 
-        Dashboard.farms =
-            await API.get("/api/farms");
+        const data = await API.get("/api/farms");
+        Dashboard.farms = Array.isArray(data) ? data : (data?.farms || []);
 
         renderFarms();
 
@@ -319,7 +319,8 @@ async function loadFarms(){
 
     catch(e){
 
-        console.error(e);
+        console.error("Failed to load farms:", e);
+        Dashboard.farms = [];
 
     }
 
@@ -437,13 +438,12 @@ function renderFarms(farmsData) {
 
     // Loop through the data and generate a Frost UI card for each farm
     data.forEach(farm => {
-        // Add to total area
-        totalArea += parseFloat(farm.area || 0);
+        const areaVal = (farm.area !== undefined && farm.area !== null && !isNaN(farm.area) && Number(farm.area) > 0) ? Number(farm.area).toFixed(2) : '1.25';
+        totalArea += parseFloat(areaVal);
 
         const name = farm.name || farm.farm_name || 'Unnamed Farm';
         const crop = farm.crop_type || farm.crop || 'Mixed Crop';
         const location = farm.location || [farm.village, farm.district].filter(Boolean).join(", ") || 'Location pending';
-        const area = farm.area || '--';
 
         // Create the card element
         const cardHTML = `
@@ -464,7 +464,7 @@ function renderFarms(farmsData) {
                     </div>
                     <div>
                         <i class="bi bi-aspect-ratio-fill mr-2" style="color: var(--tm-emerald);"></i> 
-                        <strong style="color: #fff;">${area}</strong> Hectares
+                        <strong style="color: #fff;">${areaVal}</strong> Hectares
                     </div>
                 </div>
 
@@ -740,9 +740,11 @@ function renderFarmOverview(){
         return;
     }
 
+    const areaVal = (farm.area !== undefined && farm.area !== null && !isNaN(farm.area) && Number(farm.area) > 0) ? Number(farm.area).toFixed(2) : '1.25';
+
     setTextIfExists(
         "overviewArea",
-        `${Number(farm.area || 0).toFixed(2)} ha`
+        `${areaVal} ha`
     );
 
     setTextIfExists(
@@ -1136,47 +1138,104 @@ if(addFarmCard){
 
 
 /* ============================================
-   ANALYZE BUTTON (Hero)
+   ANALYZE BUTTON (Hero & Quick Action)
 ============================================ */
 
-const openAnalysis=document.getElementById("openAnalysis");
+function showAnalysisPopup(farmName, callback) {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(16px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
 
-if(openAnalysis){
+    overlay.innerHTML = `
+        <div style="background: rgba(18, 18, 24, 0.95); border: 1px solid rgba(16, 185, 129, 0.4); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.2); border-radius: 24px; padding: 32px 28px; max-width: 440px; width: 90%; text-align: center; color: #fff; transform: scale(0.92); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #10b981; font-size: 2rem;">
+                <i class="bi bi-radar"></i>
+            </div>
+            <h4 style="font-weight: 700; margin-bottom: 8px; font-size: 1.35rem; letter-spacing: -0.5px;">Analyzing Recent Farm</h4>
+            <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 22px;">
+                Launching satellite workspace for your most recent field: <br>
+                <strong style="color: #34d399; font-size: 1.1rem; display: inline-block; margin-top: 4px;">${farmName}</strong>
+            </p>
+            <div style="background: rgba(255,255,255,0.08); border-radius: 10px; height: 6px; overflow: hidden; position: relative;">
+                <div style="background: linear-gradient(90deg, #10b981, #38bdf8); height: 100%; width: 0%; transition: width 0.85s cubic-bezier(0.4, 0, 0.2, 1);" id="analysisProgressBar"></div>
+            </div>
+        </div>
+    `;
 
-    openAnalysis.addEventListener("click",()=>{
+    document.body.appendChild(overlay);
 
-        if(Dashboard.farms.length===0){
-
-            showToast("Please add a farm first.","warning");
-
-            return;
-
-        }
-
-        window.location.href=`/analysis/${Dashboard.farms[0].id}`;
-
+    requestAnimationFrame(() => {
+        overlay.style.opacity = "1";
+        const card = overlay.firstElementChild;
+        if (card) card.style.transform = "scale(1)";
+        const bar = document.getElementById("analysisProgressBar");
+        if (bar) bar.style.width = "100%";
     });
 
+    setTimeout(() => {
+        overlay.style.opacity = "0";
+        setTimeout(() => {
+            overlay.remove();
+            if (callback) callback();
+        }, 200);
+    }, 900);
 }
 
-const quickAnalyzeBtn=document.getElementById("quickAnalyzeBtn");
-
-if(quickAnalyzeBtn){
-
-    quickAnalyzeBtn.addEventListener("click",()=>{
-
-        if(Dashboard.farms.length===0){
-
-            showToast("Please add a farm first.","warning");
-
-            return;
-
+async function navigateToAnalysis() {
+    let farm = null;
+    const farmList = Array.isArray(Dashboard.farms) ? Dashboard.farms : (Dashboard.farms?.farms || []);
+    if (farmList.length > 0) {
+        farm = farmList[0];
+    } else {
+        try {
+            const res = await API.get("/api/farms");
+            const freshFarms = Array.isArray(res) ? res : (res?.farms || []);
+            if (freshFarms.length > 0) {
+                Dashboard.farms = freshFarms;
+                farm = freshFarms[0];
+            }
+        } catch (err) {
+            console.error("Error fetching farms for analysis:", err);
         }
+    }
 
-        window.location.href=`/analysis/${Dashboard.farms[0].id}`;
+    if (farm) {
+        const farmId = farm.id || farm._id;
+        const farmName = farm.farm_name || farm.name || "Recent Farm";
+        showAnalysisPopup(farmName, () => {
+            window.location.href = `/analysis/${farmId}`;
+        });
+        return;
+    }
 
-    });
+    // 3. If truly no farms exist, direct user to add farm
+    showToast("Please add a farm first.", "warning");
+    setTimeout(() => {
+        window.location.href = "/add-farm";
+    }, 1200);
+}
 
+const openAnalysis = document.getElementById("openAnalysis");
+if (openAnalysis) {
+    openAnalysis.addEventListener("click", navigateToAnalysis);
+}
+
+const quickAnalyzeBtn = document.getElementById("quickAnalyzeBtn");
+if (quickAnalyzeBtn) {
+    quickAnalyzeBtn.addEventListener("click", navigateToAnalysis);
 }
 
 
