@@ -71,6 +71,9 @@ def health():
 
 @app.route("/")
 def home():
+    if "user_id" in session:
+        return redirect("/dashboard")
+
     return render_template("landing.html")
 
 
