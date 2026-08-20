@@ -419,7 +419,6 @@ def add_farm_page():
             try:
                 coords = boundary.get("coordinates", [])
                 if coords and len(coords[0]) > 2:
-                    import math
                     pts = coords[0]
                     R = 6378137.0
                     total = 0.0
