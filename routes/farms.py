@@ -75,6 +75,13 @@ def create_farm():
 
     data = request.get_json()
 
+    # Ensure a boundary is provided to satisfy the database constraint
+    if not data.get("boundary"):
+        lat = float(data.get("latitude", 22.5726))
+        lon = float(data.get("longitude", 88.3639))
+        # Default bounding box / polygon around the point
+        data["boundary"] = f"POLYGON(({lon-0.001} {lat-0.001}, {lon+0.001} {lat-0.001}, {lon+0.001} {lat+0.001}, {lon-0.001} {lat+0.001}, {lon-0.001} {lat-0.001}))"
+
     try:
 
         farm = FarmService.create_farm(
