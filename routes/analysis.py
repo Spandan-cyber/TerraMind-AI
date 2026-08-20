@@ -119,13 +119,17 @@ def all_history():
 
         }),401
 
-    history = AnalysisService.get_all_history(
+    try:
+        history = AnalysisService.get_all_history(
+            user_id
+        )
 
-        user_id
-
-    )
-
-    return jsonify(history)
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 
 
 # ==========================================================

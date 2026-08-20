@@ -80,17 +80,21 @@ class AnalysisService:
 
     @staticmethod
     def get_history(farm_id: str, user_id: str):
-        response = (
-            supabase
-            .table("analysis_history")
-            .select("*")
-            .eq("farm_id", farm_id)
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .execute()
-        )
+        try:
+            response = (
+                supabase
+                .table("analysis_history")
+                .select("*")
+                .eq("farm_id", farm_id)
+                .eq("user_id", user_id)
+                .order("created_at", desc=True)
+                .execute()
+            )
 
-        return response.data
+            return response.data if response.data else []
+        except Exception as e:
+            print("Error in AnalysisService.get_history:", e)
+            return []
 
     @staticmethod
     def get_latest_advisory(user_id: str):
@@ -107,32 +111,39 @@ class AnalysisService:
 
     @staticmethod
     def get_all_history(user_id):
-        farms = (
-            supabase
-            .table("farms")
-            .select("id,farm_name")
-            .eq("user_id", user_id)
-            .execute()
-        )
+        try:
+            farms = (
+                supabase
+                .table("farms")
+                .select("id,farm_name")
+                .eq("user_id", user_id)
+                .execute()
+            )
 
-        farm_map = {f["id"]: f["farm_name"] for f in farms.data}
+            if not farms or not farms.data:
+                return []
 
-        if not farm_map:
+            farm_map = {f["id"]: f["farm_name"] for f in farms.data}
+
+            if not farm_map:
+                return []
+
+            history = (
+                supabase
+                .table("analysis_history")
+                .select("*")
+                .in_("farm_id", list(farm_map.keys()))
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+            result = []
+            if history and history.data:
+                for item in history.data:
+                    item["farm_name"] = farm_map.get(item["farm_id"], "Unknown")
+                    result.append(item)
+
+            return result
+        except Exception as e:
+            print("Error in AnalysisService.get_all_history:", e)
             return []
-
-        history = (
-            supabase
-            .table("analysis_history")
-            .select("*")
-            .in_("farm_id", list(farm_map.keys()))
-            .order("created_at", desc=True)
-            .execute()
-        )
-
-        result = []
-
-        for item in history.data:
-            item["farm_name"] = farm_map.get(item["farm_id"], "Unknown")
-            result.append(item)
-
-        return result

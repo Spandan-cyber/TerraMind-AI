@@ -94,5 +94,27 @@ def logout():
     return redirect(url_for("auth.login") if "auth.login" in app.view_functions else "/login")
 
 
+@app.errorhandler(500)
+def handle_internal_server_error(e):
+    from flask import request
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "success": False,
+            "message": "Internal Server Error: An unexpected error occurred."
+        }), 500
+    return render_template("500.html"), 500
+
+
+@app.errorhandler(404)
+def handle_not_found_error(e):
+    from flask import request
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "success": False,
+            "message": "API endpoint not found."
+        }), 404
+    return render_template("404.html"), 404
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)

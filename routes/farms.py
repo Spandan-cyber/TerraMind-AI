@@ -112,23 +112,29 @@ def get_farm(farm_id):
 
         }),401
 
-    farm = FarmService.get_farm(
+    try:
+        farm = FarmService.get_farm(
+            user_id,
+            farm_id
+        )
 
-        user_id,
+        if not farm:
 
-        farm_id
+            return jsonify({
 
-    )
+                "message":"Farm not found"
 
-    if not farm:
+            }),404
+
+        return jsonify(farm)
+
+    except Exception as e:
 
         return jsonify({
 
-            "message":"Farm not found"
+            "message": str(e)
 
-        }),404
-
-    return jsonify(farm)
+        }), 500
 # ======================================================
 # UPDATE FARM
 # ======================================================

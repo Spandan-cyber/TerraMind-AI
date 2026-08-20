@@ -264,31 +264,34 @@ def me():
             "message": "Unauthorized"
         }), 401
 
-    profile = FarmService.get_profile(user_id)
+    try:
+        profile = FarmService.get_profile(user_id)
+        summary = FarmService.dashboard_summary(user_id)
 
-    summary = FarmService.dashboard_summary(user_id)
-
-    return jsonify({
-
-        "id": user_id,
-
-        "email": session.get("email"),
-
-        "full_name": profile.get("full_name") if profile else "",
-
-        "phone": profile.get("phone") if profile else "",
-
-        "farm_count": summary["farm_count"],
-
-        "total_area": summary["total_area"],
-
-        "healthy_farms": summary["healthy_farms"],
-
-        "latest_farm": summary["latest_farm"],
-
-        "profile_image": profile.get("profile_image") if profile else None
-
-    })
+        return jsonify({
+            "id": user_id,
+            "email": session.get("email"),
+            "full_name": profile.get("full_name") if profile else session.get("full_name", ""),
+            "phone": profile.get("phone") if profile else "",
+            "farm_count": summary.get("farm_count", 0),
+            "total_area": summary.get("total_area", 0),
+            "healthy_farms": summary.get("healthy_farms", 0),
+            "latest_farm": summary.get("latest_farm"),
+            "profile_image": profile.get("profile_image") if profile else session.get("profile_photo")
+        })
+    except Exception as e:
+        print("Error in /api/me:", e)
+        return jsonify({
+            "id": user_id,
+            "email": session.get("email"),
+            "full_name": session.get("full_name", ""),
+            "phone": "",
+            "farm_count": 0,
+            "total_area": 0,
+            "healthy_farms": 0,
+            "latest_farm": None,
+            "profile_image": session.get("profile_photo")
+        })
 
 
 @auth.route("/api/profile", methods=["PUT"])

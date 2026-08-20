@@ -132,25 +132,29 @@ class FarmService:
     @staticmethod
     def get_farms(user_id):
 
-        response = (
+        try:
+            response = (
 
-            supabase
+                supabase
 
-            .table("farms")
+                .table("farms")
 
-            .select("*")
+                .select("*")
 
-            .eq("user_id", user_id)
+                .eq("user_id", user_id)
 
-            .order("created_at", desc=True)
+                .order("created_at", desc=True)
 
-            .execute()
+                .execute()
 
-        )
+            )
 
-        if response.data:
-            return [FarmService._ensure_farm_area(f) for f in response.data]
-        return []
+            if response.data:
+                return [FarmService._ensure_farm_area(f) for f in response.data]
+            return []
+        except Exception as e:
+            print("Error in FarmService.get_farms:", e)
+            return []
 
 
     # =====================================================
@@ -160,29 +164,33 @@ class FarmService:
     @staticmethod
     def get_farm(user_id, farm_id):
 
-        response = (
+        try:
+            response = (
 
-            supabase
+                supabase
 
-            .table("farms")
+                .table("farms")
 
-            .select("*")
+                .select("*")
 
-            .eq("id", farm_id)
+                .eq("id", farm_id)
 
-            .eq("user_id", user_id)
+                .eq("user_id", user_id)
 
-            .limit(1)
+                .limit(1)
 
-            .execute()
+                .execute()
 
-        )
+            )
 
-        if response.data:
+            if response.data:
 
-            return FarmService._ensure_farm_area(response.data[0])
+                return FarmService._ensure_farm_area(response.data[0])
 
-        return None
+            return None
+        except Exception as e:
+            print("Error in FarmService.get_farm:", e)
+            return None
 
 
     # =====================================================
@@ -427,19 +435,23 @@ class FarmService:
     @staticmethod
     def get_profile(user_id):
 
-        response = (
-            supabase
-            .table("profiles")
-            .select("*")
-            .eq("id", user_id)
-            .limit(1)
-            .execute()
-        )
+        try:
+            response = (
+                supabase
+                .table("profiles")
+                .select("*")
+                .eq("id", user_id)
+                .limit(1)
+                .execute()
+            )
 
-        if response.data:
-            return response.data[0]
+            if response.data:
+                return response.data[0]
 
-        return None
+            return None
+        except Exception as e:
+            print("Error in FarmService.get_profile:", e)
+            return None
 
     @staticmethod
     def update_profile(user_id, data, image=None):
